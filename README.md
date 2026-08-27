@@ -25,6 +25,11 @@ checkpoint 和完整日志保存在环境变量 `OCEAN_SURROGATE_ROOT` 指向的
 可编辑 LaTeX 源码和图表位于 [`docs/technical_report/`](docs/technical_report/)。详细工程记录另见
 [`docs/project_report.md`](docs/project_report.md)。
 
+复用 `ocean-field-project` 的 GEBCO 2026 地形、WOA23 月度 SSP 和现成 Bellhop 标签所做的
+真实环境快速验证见
+[`docs/field_validation_bashi_reuse_v0.1.md`](docs/field_validation_bashi_reuse_v0.1.md)。该结果
+不新增 Bellhop 计算，并明确区分 500 Hz/3,200 射线 proxy 与正式 1 kHz 验收。
+
 ## 快速开始
 
 面向学生和甲方机器的一键入口默认只检查环境与测试，不运行 Bellhop：

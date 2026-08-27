@@ -21,6 +21,7 @@
 \usepackage{float}
 \usepackage{fancyhdr}
 \usepackage{titlesec}
+\usepackage{listings}
 \usepackage{xurl}
 \usepackage{hyperref}
 \usepackage{lastpage}
@@ -60,7 +61,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\small\sffamily\color{Navy}深海声传播损失快速计算}
-\fancyhead[R]{\small\sffamily\color{Navy}项目技术报告 V1.1}
+\fancyhead[R]{\small\sffamily\color{Navy}项目技术报告 V1.2}
 \fancyfoot[L]{\small\color{gray}Ocean Acoustic Surrogate Project}
 \fancyfoot[R]{\small\color{gray}\thepage\,/\,\pageref{LastPage}}
 \renewcommand{\headrulewidth}{0.45pt}
@@ -78,6 +79,21 @@
   boxrule=0.7pt,
   arc=1mm,
   left=4mm,right=4mm,top=3mm,bottom=3mm
+}
+
+\lstdefinestyle{repro}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{LightGray},
+  frame=single,
+  rulecolor=\color{gray!35},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  xleftmargin=0.8em,
+  framexleftmargin=0.6em,
+  aboveskip=0.6em,
+  belowskip=0.6em
 }
 
 \newcommand{\figfull}[3]{
@@ -119,7 +135,7 @@ Fourier Neural Operator 方法、数据集构建与实验结果}\par
 \textbf{研究任务} & 从一维声速剖面快速预测二维非相干传播损失场 \\
 \textbf{参考方法} & Bellhop，25,600 条射线/场 \\
 \textbf{最终结果} & 测试 RMSE 0.5165 dB，A100 P95 4.73 ms \\
-\textbf{报告版本} & V1.1，2026-08-27 \\
+\textbf{报告版本} & V1.2，2026-08-27 \\
 \end{tabular}
 \end{summarybox}
 
@@ -623,6 +639,354 @@ FNO & 4 层，32 channels，16$\times$48 modes \\
 A100 P95 & 4.73 ms \\
 \bottomrule
 \end{longtable}
+
+\section{复现与后续开发指南}
+
+本节面向在甲方机器上继续开发的学生，给出从环境安装到独立验收的完整路径。仓库已经提供
+一键脚本 \texttt{scripts/reproduce\_mvp.sh}。脚本默认只检查环境和单元测试，不会自动启动
+耗时的 Bellhop 数据生成；必须显式选择 \texttt{REPRO\_MODE=full} 才会从零生成标签。
+
+\subsection{复现范围与两条路径}
+
+复现工作分为两种。
+
+\begin{enumerate}
+  \item \textbf{冻结数据复现：}甲方机器预先放置封存的 \texttt{dataset.npz}，学生只重新
+  训练最终模型、计算测试指标和推理时延。该路径不运行 Bellhop，适合首先验证 Python、
+  PyTorch、GPU 和报告结果链路。
+  \item \textbf{从零复现：}先验证 Julia/Bellhop 后端，再进行 8 场射线数收敛、断点生成
+  512 场 reference、训练最终模型并独立复核。该路径会实际运行 Bellhop，适合甲方数值
+  环境已经确认后的完整复现。
+\end{enumerate}
+
+两种路径最终调用同一套训练和测试代码。建议学生先完成冻结数据复现，再决定是否进行
+从零标签生成。
+
+\subsection{机器与软件要求}
+
+\begin{table}[H]
+\centering
+\caption{复现机器建议配置}
+\begin{tabularx}{\textwidth}{L{3.6cm}Y}
+\toprule
+项目 & 要求或建议 \\
+\midrule
+操作系统 & Linux、WSL2 或 macOS；原生 Windows 尚未验证 \\
+Python & 3.11，由 \texttt{uv} 安装并使用 \texttt{uv.lock} 锁定依赖 \\
+数值后端 & JuliaCall 管理的 Julia 1.12；UnderwaterAcoustics.jl 0.8.1；AcousticsToolbox.jl 0.8.0 \\
+GPU & 训练建议使用 NVIDIA CUDA GPU；无 GPU 可运行检查和 CPU 复核，但耗时不同 \\
+磁盘 & 建议至少预留 20 GB，用于 Python/Julia 环境、Bellhop cases、数据和模型 \\
+网络 & 首次安装需要取得 Python wheels、Julia 运行时和 Julia packages；离线机器需提前打包缓存 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+若需要严格对比本报告 4.73 ms 的时延，应使用 NVIDIA A100 或重新在甲方指定硬件上建立
+独立时延基准。不同 CUDA、FFT 和 CPU 后端可能带来轻微数值差异，不影响按 2 dB / 100 ms
+门槛重新验收。
+
+\subsection{仓库布局与版本固定}
+
+两个仓库必须放在同一父目录下，因为 surrogate 的锁文件以相邻路径引用数值后端仓库。
+目录结构如下：
+
+\begin{lstlisting}[style=repro,language=bash]
+acoustic-work/
+  ocean-acoustic-agent/
+  ocean-acoustic-surrogate/
+\end{lstlisting}
+
+联网机器可以执行：
+
+\begin{lstlisting}[style=repro,language=bash]
+mkdir -p acoustic-work && cd acoustic-work
+git clone https://github.com/xuangu-fang/ocean-acoustic-agent.git
+git clone https://github.com/xuangu-fang/ocean-acoustic-surrogate.git
+
+# Pin the numerical backend used by the frozen dataset.
+git -C ocean-acoustic-agent checkout \
+  f07e8ea9a4fcb7bc66b4f36050b60d41d0fd959f
+
+# This tag contains the report and reproduction appendix.
+git -C ocean-acoustic-surrogate checkout technical-report-v1.2
+\end{lstlisting}
+
+甲方机器如果不能访问 GitHub，应在联网机器导出两个仓库的 bundle 或压缩包，并保留
+\texttt{.git}、\texttt{uv.lock}、\texttt{juliapkg.json} 和配置文件。不要只复制若干 Python
+文件，否则无法确认数值后端版本和数据哈希。
+
+\subsection{环境安装与 Bellhop 自检}
+
+首先在数值后端仓库完成完整自检：
+
+\begin{lstlisting}[style=repro,language=bash]
+cd acoustic-work/ocean-acoustic-agent
+uv python install 3.11
+uv sync --locked --extra dev
+
+# Loads pinned Julia packages and solves one minimal Bellhop case.
+uv run python scripts/check_env.py
+\end{lstlisting}
+
+只有完整自检明确输出 \texttt{Bellhop-ready}，才能认为数据生成机器已经就绪。
+快速参数 \texttt{--quick} 只检查 Julia 包能否加载，不能代替 Bellhop 求解测试。
+随后检查代理项目：
+
+\begin{lstlisting}[style=repro,language=bash]
+cd ../ocean-acoustic-surrogate
+uv sync --locked
+REPRO_MODE=check bash scripts/reproduce_mvp.sh
+\end{lstlisting}
+
+该命令运行 Ruff 和项目单元测试，不生成任何新标签。
+
+\subsection{大型数据目录约定}
+
+代码、配置和轻量结果进入 Git；大型数据、Bellhop cases、checkpoint 和完整预测保存在
+\texttt{OCEAN\_SURROGATE\_ROOT}：
+
+\begin{lstlisting}[style=repro,language=bash]
+export OCEAN_SURROGATE_ROOT=/mnt/data/xuangu-fang/ocean-acoustics/\
+projects/ocean-acoustic-surrogate
+mkdir -p "$OCEAN_SURROGATE_ROOT"
+\end{lstlisting}
+
+关键目录结构为：
+
+\begin{lstlisting}[style=repro]
+$OCEAN_SURROGATE_ROOT/
+  datasets/scs_june_narrow_v0.1/
+    pilot/convergence_report.json
+    n512/dataset.npz
+    n512/manifest.json
+    n512/samples/ssp_*/sample.npz
+    n512/bellhop_cases/
+  runs/<timestamp>_r3_padding_residual/
+    model.pt
+    metrics.json
+    history.json
+    predictions.npz
+    independent_verification_<device>.json
+  campaigns/latest.json
+\end{lstlisting}
+
+冻结数据复现至少需要 \texttt{dataset.npz} 和 \texttt{manifest.json}。正式数据文件的
+SHA-256 应为：
+
+\begin{lstlisting}[style=repro,language=bash]
+sha256sum "$OCEAN_SURROGATE_ROOT/datasets/\
+scs_june_narrow_v0.1/n512/dataset.npz"
+# 13f4246b86a2fff33f2e5d587c1443be47eb15b4ad3d5c413688464ed8c7281d
+\end{lstlisting}
+
+如果哈希不一致，应先确认文件传输和路径，不应直接继续比较逐点预测。
+
+\subsection{一键运行}
+
+\subsubsection{仅检查环境，不运行 Bellhop}
+
+\begin{lstlisting}[style=repro,language=bash]
+cd acoustic-work/ocean-acoustic-surrogate
+export OCEAN_SURROGATE_ROOT=/mnt/data/xuangu-fang/ocean-acoustics/\
+projects/ocean-acoustic-surrogate
+REPRO_MODE=check bash scripts/reproduce_mvp.sh
+\end{lstlisting}
+
+\subsubsection{从冻结数据训练最终模型}
+
+将封存数据放到约定的 \texttt{n512/dataset.npz} 后执行：
+
+\begin{lstlisting}[style=repro,language=bash]
+REPRO_MODE=train bash scripts/reproduce_mvp.sh
+\end{lstlisting}
+
+脚本只选择最终结构 \texttt{r3\_padding\_residual}，不会重新运行报告中未采用的其他实验；
+训练完成后会自动找到新 run directory，并在密封测试集上重新加载、计算指标和计时。
+
+\subsubsection{从零生成 reference 并训练}
+
+\begin{lstlisting}[style=repro,language=bash]
+REPRO_MODE=full bash scripts/reproduce_mvp.sh
+\end{lstlisting}
+
+完整模式依次执行：Bellhop 自检、8 场射线收敛、512 场 reference 生成、数据 profile、最终
+模型训练和独立复核。样本以 \texttt{sample.npz + metadata.json} 为断点，任务中断后再次执行
+同一命令会跳过完整样本，不必从头重算。
+
+\subsubsection{只复核已有模型}
+
+\begin{lstlisting}[style=repro,language=bash]
+export REPRO_RUN_DIR="$OCEAN_SURROGATE_ROOT/runs/\
+<timestamp>_r3_padding_residual"
+REPRO_MODE=verify bash scripts/reproduce_mvp.sh
+\end{lstlisting}
+
+\subsection{不使用一键脚本时的等价命令}
+
+为了便于定位问题，一键脚本对应的核心命令如下：
+
+\begin{lstlisting}[style=repro,language=bash]
+# 1. Eight-profile ray convergence audit.
+uv run ocean-acoustic-surrogate pilot configs/mvp.yaml --samples 8
+
+# 2. Generate or resume 512 Bellhop reference fields.
+uv run ocean-acoustic-surrogate generate configs/mvp.yaml --samples 512
+
+# 3. Summarize and hash the packaged dataset.
+uv run ocean-acoustic-surrogate profile configs/mvp.yaml --samples 512
+
+# 4. Train only the final model.
+uv run ocean-acoustic-surrogate campaign \
+  configs/mvp.yaml configs/campaign.yaml \
+  --samples 512 --only r3_padding_residual
+
+# 5. Reload one run and score only the sealed test split.
+uv run ocean-acoustic-surrogate verify configs/mvp.yaml \
+  "$REPRO_RUN_DIR" --samples 512 --device auto
+
+# 6. Rebuild all report figures and the PDF.
+bash scripts/build_technical_report.sh
+\end{lstlisting}
+
+\subsection{核心代码位置}
+
+\begin{table}[H]
+\centering
+\caption{学生继续开发时的代码入口}
+\begin{tabularx}{\textwidth}{L{5.2cm}Y}
+\toprule
+文件 & 职责 \\
+\midrule
+\texttt{configs/mvp.yaml} & 频率、距离、网格、海底、SSP 参数域、数据划分和验收指标 \\
+\texttt{configs/campaign.yaml} & 最终 FNO 结构、训练超参数和模型选择配置 \\
+\texttt{src/.../ssp.py} & Latin hypercube 采样和四参数 SSP 构造 \\
+\texttt{src/.../dataset.py} & Bellhop task、收敛审计、断点生成、mask 和数据封装 \\
+\texttt{src/.../features.py} & SSP 插值、输入张量和训练均值场残差变换 \\
+\texttt{src/.../models/fno.py} & 谱卷积、非周期 padding、残差 block 和投影头 \\
+\texttt{src/.../training.py} & 训练、验证选模、测试、时延和 checkpoint 保存 \\
+\texttt{src/.../verification.py} & 新进程重载、数据哈希、密封测试和独立计时 \\
+\texttt{scripts/reproduce\_mvp.sh} & 面向甲方机器的一键复现入口 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+表中 \texttt{src/...} 代表 \texttt{src/ocean\_acoustic\_surrogate/}。学生修改场景参数时，应先
+新建配置和 dataset ID，不要直接覆盖 \texttt{scs\_june\_narrow\_v0.1}，以保证冻结结果仍可复核。
+
+\subsection{Bellhop reference 生成代码示例}
+
+下面代码与正式数据生成器使用同一接口，展示一条 SSP 如何变成一个 Bellhop reference：
+
+\begin{lstlisting}[style=repro,language=Python]
+from pathlib import Path
+import numpy as np
+from ocean_acoustic_agent import run_simulation
+from ocean_acoustic_surrogate.config import MVPConfig
+from ocean_acoustic_surrogate.dataset import build_task
+from ocean_acoustic_surrogate.ssp import build_ssp_records
+
+config = MVPConfig.from_yaml("configs/mvp.yaml")
+record = build_ssp_records(
+    config.ssp_family, n_samples=1, seed=config.contract.seed
+)[0]
+task = build_task(
+    config,
+    record,
+    num_rays=config.contract.reference_num_rays,
+    task_id="reference_smoke_00000",
+)
+result = run_simulation(task)
+if result.status == "failed" or result.tl_field is None:
+    raise RuntimeError(result.error_message)
+
+tl_db = np.asarray(result.tl_field["tl_db"], dtype=np.float32)
+valid_mask = np.isfinite(tl_db)
+np.savez_compressed(
+    Path("reference_smoke.npz"),
+    tl_db=np.where(valid_mask, tl_db, 120.0),
+    valid_mask=valid_mask,
+    ranges_m=result.tl_field["ranges_m"],
+    depths_m=result.tl_field["depths_m"],
+    ssp_depths_m=record.depths_m,
+    ssp_speeds_mps=record.speeds_mps,
+)
+\end{lstlisting}
+
+正式生成不要手工循环这段示例，而应调用 \texttt{generate} 命令；正式实现会额外保存 case、
+运行时间、split、配置哈希和失败记录，并支持断点续跑。
+
+\subsection{最终模型训练代码示例}
+
+若学生需要在 notebook 或自己的调度器中调用训练入口，可以直接选择最终实验配置：
+
+\begin{lstlisting}[style=repro,language=Python]
+from pathlib import Path
+from ocean_acoustic_surrogate.config import MVPConfig, load_campaign
+from ocean_acoustic_surrogate.training import run_experiment
+
+mvp = MVPConfig.from_yaml("configs/mvp.yaml")
+campaign = load_campaign("configs/campaign.yaml")
+experiment = next(
+    item for item in campaign["experiments"]
+    if item["id"] == "r3_padding_residual"
+)
+dataset = (
+    mvp.dataset_root / "n512" / "dataset.npz"
+)
+run_dir = run_experiment(
+    mvp,
+    dataset,
+    experiment,
+    campaign["training_defaults"],
+)
+print(run_dir)
+\end{lstlisting}
+
+训练入口只用 train split 拟合均值场和残差尺度，用 validation split 选择最佳 epoch，最后才
+计算 test 指标。不要把测试样本混入训练，也不要按单个网格随机拆分数据。
+
+\subsection{reference 评分与独立复核代码}
+
+训练结束后推荐从新 Python 进程调用公开复核函数，而不是读取训练进程内变量：
+
+\begin{lstlisting}[style=repro,language=Python]
+from pathlib import Path
+from ocean_acoustic_surrogate.config import MVPConfig
+from ocean_acoustic_surrogate.verification import verify_run
+
+mvp = MVPConfig.from_yaml("configs/mvp.yaml")
+dataset = mvp.dataset_root / "n512" / "dataset.npz"
+run_dir = Path("/path/to/<timestamp>_r3_padding_residual")
+report = verify_run(mvp, dataset, run_dir, device_name="auto")
+print(report)
+\end{lstlisting}
+
+复核过程会重新计算 dataset SHA-256、重建 SSP 特征、加载模型权重、只选择冻结 test split、
+重新计算 RMSE/MAE 并执行 batch=1 P95 时延测试。输出写入 run directory，文件名为
+\path{independent_verification_<device>.json}。
+
+\subsection{预期产物与通过判据}
+
+一次完整复现至少应保留以下文件：
+\begin{itemize}
+  \item 数据：\texttt{dataset.npz}、\texttt{manifest.json}、\texttt{convergence\_report.json}；
+  \item 模型：\texttt{model.pt}、\texttt{metrics.json}、\texttt{history.json}；
+  \item 预测：\texttt{predictions.npz}；
+  \item 独立验收：\texttt{independent\_verification\_<device>.json}；
+  \item 版本信息：两个仓库的 Git SHA、Python/Torch/CUDA/Julia packages 版本和配置哈希。
+\end{itemize}
+
+在相同冻结数据和 A100 环境下，应得到接近 0.5165 dB 的测试 RMSE 和 4.73 ms 的 P95。
+在其他硬件上不要求逐位一致，但必须重新报告硬件、RMSE、MAE 和 P95，并检查三项验收值：
+\begin{equation}
+  \RMSE\leq2\ \mathrm{dB},\qquad
+  \mathrm{MAE}\leq2\ \mathrm{dB},\qquad
+  \mathrm{P95}\leq100\ \mathrm{ms}.
+\end{equation}
+
+如果结果不一致，排查顺序应为：数据 SHA、两个仓库 Git SHA、\texttt{mvp.yaml} 配置哈希、
+Bellhop field mode 与 rays、数据 split、模型配置、设备和 CUDA/FFT 后端。不要先通过修改测试
+划分或扩大误差阈值来“修正”结果。
 
 \section{参考资料}
 

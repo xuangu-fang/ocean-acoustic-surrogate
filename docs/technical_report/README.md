@@ -10,7 +10,10 @@ OCEAN_SURROGATE_ROOT=/home/ubuntu/ocean-acoustic-surrogate-artifacts \
 
 最终 PDF 输出到：
 
-`docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.1.pdf`
+`docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.2.pdf`
+
+附录中的一键复现入口为仓库根目录下的 `scripts/reproduce_mvp.sh`。默认不执行 Bellhop；
+只有显式设置 `REPRO_MODE=full` 才会生成标签并重新训练。
 
 正文源文件为 `technical_report.tex`，图表源程序为
 `scripts/generate_technical_report_figures.py`。图表的 PDF/PNG 双格式版本位于 `assets/`。

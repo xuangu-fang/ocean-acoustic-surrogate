@@ -21,11 +21,25 @@ checkpoint 和完整日志保存在环境变量 `OCEAN_SURROGATE_ROOT` 指向的
 2 dB / 100 ms 门槛。
 
 面向甲方的任务定义、数据来源与构造、改进型 FNO 方法、实验协议和结果分析见
-[`docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.1.pdf`](docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.1.pdf)；
+[`docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.2.pdf`](docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.2.pdf)；
 可编辑 LaTeX 源码和图表位于 [`docs/technical_report/`](docs/technical_report/)。详细工程记录另见
 [`docs/project_report.md`](docs/project_report.md)。
 
 ## 快速开始
+
+面向学生和甲方机器的一键入口默认只检查环境与测试，不运行 Bellhop：
+
+```bash
+REPRO_MODE=check bash scripts/reproduce_mvp.sh
+
+# 已放置冻结数据后，只训练并复核最终模型
+REPRO_MODE=train bash scripts/reproduce_mvp.sh
+
+# 仅在确认数值环境后，显式从零生成 Bellhop 标签并训练
+REPRO_MODE=full bash scripts/reproduce_mvp.sh
+```
+
+等价的分步命令如下：
 
 ```bash
 uv sync --locked

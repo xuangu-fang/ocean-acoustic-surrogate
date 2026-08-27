@@ -1,5 +1,5 @@
 contract:
-  dataset_id: bashi_gebco_diverse_smooth_woa23_june_v0.3
+  dataset_id: bashi_gebco_full_depth_woa23_june_v0.4
   seed: 20260828
   frequency_hz: 1000.0
   source_depth_m: 50.0
@@ -22,26 +22,26 @@ contract:
   bathymetry:
     name: bashi_gebco2026_four_profile_low_dimensional_family
     profiles:
-      - name: gebco_az000_relief600
+      - name: gebco_az000_relief2500
         source: GEBCO_2026_Bashi_center_20.5N_121.5E_azimuth_000deg
         processing: 9km_moving_average_then_affine_relief_compression_then_10km_resampling
         ranges_m: &terrain_ranges [0, 10000, 20000, 30000, 40000, 50000]
-        depths_m: [2600.0, 2246.5, 2049.1, 2378.4, 2278.8, 2264.6]
-      - name: gebco_az144_relief700
+        depths_m: [4500.0, 3027.0, 2204.6, 3576.6, 3161.8, 3102.6]
+      - name: gebco_az144_relief2800
         source: GEBCO_2026_Bashi_center_20.5N_121.5E_azimuth_144deg
         processing: 9km_moving_average_then_affine_relief_compression_then_10km_resampling
         ranges_m: *terrain_ranges
-        depths_m: [2700.0, 2363.6, 2381.3, 2196.2, 2115.7, 2008.8]
-      - name: gebco_az216_relief450
+        depths_m: [4800.0, 3454.3, 3525.0, 2784.9, 2462.8, 2035.4]
+      - name: gebco_az216_relief2000
         source: GEBCO_2026_Bashi_center_20.5N_121.5E_azimuth_216deg
         processing: 9km_moving_average_then_affine_relief_compression_then_10km_resampling
         ranges_m: *terrain_ranges
-        depths_m: [2000.0, 2346.3, 2449.6, 2410.6, 2431.2, 2380.4]
-      - name: gebco_az288_relief650
+        depths_m: [2000.0, 3539.3, 3998.0, 3824.7, 3916.5, 3690.7]
+      - name: gebco_az288_relief2800
         source: GEBCO_2026_Bashi_center_20.5N_121.5E_azimuth_288deg
         processing: 9km_moving_average_then_affine_relief_compression_then_10km_resampling
         ranges_m: *terrain_ranges
-        depths_m: [2484.7, 2593.4, 2641.4, 2643.6, 2391.8, 2000.0]
+        depths_m: [4088.0, 4556.0, 4763.2, 4772.3, 3687.7, 2000.0]
 
 ssp_family:
   name: bashi_woa23_june_narrow

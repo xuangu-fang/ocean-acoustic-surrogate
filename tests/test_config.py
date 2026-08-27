@@ -34,5 +34,6 @@ def test_terrain_tradeoff_contract_keeps_one_complexity_axis():
     assert not config.ssp_family.profiles
     assert len(config.contract.bathymetry.profiles) == 4
     relief = [max(profile.depths_m) - min(profile.depths_m) for profile in config.contract.bathymetry.profiles]
-    assert min(relief) >= 400.0
+    assert min(relief) >= 1900.0
+    assert max(max(profile.depths_m) for profile in config.contract.bathymetry.profiles) <= 4800.0
     assert max(len(profile.depths_m) for profile in config.contract.bathymetry.profiles) == 6

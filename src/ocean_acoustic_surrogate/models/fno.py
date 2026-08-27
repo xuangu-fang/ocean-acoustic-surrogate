@@ -89,6 +89,7 @@ class FNO2d(nn.Module):
         padding_range: int = 0,
         residual_blocks: bool = False,
         local_kernel_size: int = 1,
+        zero_output_init: bool = False,
     ) -> None:
         super().__init__()
         self.in_channels = in_channels
@@ -113,6 +114,9 @@ class FNO2d(nn.Module):
             nn.GELU(),
             nn.Conv2d(128, 1, 1),
         )
+        if zero_output_init:
+            nn.init.zeros_(self.project[-1].weight)
+            nn.init.zeros_(self.project[-1].bias)
 
     @staticmethod
     def coordinates(values: torch.Tensor) -> torch.Tensor:
@@ -154,4 +158,5 @@ def build_model(config: dict, in_channels: int) -> FNO2d:
         padding_range=int(config.get("padding_range", 0)),
         residual_blocks=bool(config.get("residual_blocks", False)),
         local_kernel_size=int(config.get("local_kernel_size", 1)),
+        zero_output_init=bool(config.get("zero_output_init", False)),
     )

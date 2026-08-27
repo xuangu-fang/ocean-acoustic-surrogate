@@ -22,3 +22,16 @@ def test_fno_preserves_grid_shape(padding, local):
     assert output.shape == (3, 1, 16, 32)
     output.mean().backward()
     assert all(parameter.grad is not None for parameter in model.parameters())
+
+
+def test_zero_output_initialization_starts_from_residual_anchor():
+    model = FNO2d(
+        in_channels=2,
+        hidden_channels=8,
+        modes_depth=4,
+        modes_range=6,
+        n_layers=2,
+        zero_output_init=True,
+    )
+    output = model(torch.randn(3, 2, 16, 32))
+    assert torch.count_nonzero(output) == 0

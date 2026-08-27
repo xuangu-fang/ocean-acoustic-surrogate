@@ -57,6 +57,7 @@ experiments:
       residual_blocks: true
       local_kernel_size: 1
       use_hankel_feature: false
+      zero_output_init: true
     loss:
       gradient_weight: 0.0
       convergence_weight: 0.0

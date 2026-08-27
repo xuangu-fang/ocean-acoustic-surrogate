@@ -94,6 +94,13 @@ class ContractConfig(BaseModel):
         return self
 
 
+class SSPTemplateConfig(BaseModel):
+    name: str
+    speeds_mps: list[float]
+    source: str
+    processing: str
+
+
 class SSPFamilyConfig(BaseModel):
     name: str
     depths_m: list[float]
@@ -103,6 +110,7 @@ class SSPFamilyConfig(BaseModel):
     channel_axis_shift_m: tuple[float, float]
     deep_gradient_mps: tuple[float, float]
     interpolation_points: int = 33
+    profiles: list[SSPTemplateConfig] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_profile(self) -> SSPFamilyConfig:
@@ -110,6 +118,11 @@ class SSPFamilyConfig(BaseModel):
             raise ValueError("depths_m and base_speeds_mps must have equal length")
         if self.depths_m != sorted(self.depths_m):
             raise ValueError("SSP depths must be ascending")
+        names = [profile.name for profile in self.profiles]
+        if len(names) != len(set(names)):
+            raise ValueError("SSP profile names must be unique")
+        if any(len(profile.speeds_mps) != len(self.depths_m) for profile in self.profiles):
+            raise ValueError("every SSP profile must use the family depth grid")
         return self
 
 

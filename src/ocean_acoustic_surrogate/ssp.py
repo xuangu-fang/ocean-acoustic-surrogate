@@ -24,6 +24,7 @@ class SSPRecord:
     parameters: np.ndarray
     depths_m: np.ndarray
     speeds_mps: np.ndarray
+    profile_name: str = "base"
 
 
 def latin_hypercube_parameters(config: SSPFamilyConfig, n_samples: int, seed: int) -> np.ndarray:
@@ -47,11 +48,15 @@ def latin_hypercube_parameters(config: SSPFamilyConfig, n_samples: int, seed: in
 def profile_from_parameters(
     config: SSPFamilyConfig,
     parameters: np.ndarray,
+    base_speeds_mps: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Construct one smooth, bounded SSP from four interpretable perturbations."""
     global_offset, thermocline_amplitude, axis_shift, deep_gradient = map(float, parameters)
     base_depths = np.asarray(config.depths_m, dtype=np.float64)
-    base_speeds = np.asarray(config.base_speeds_mps, dtype=np.float64)
+    base_speeds = np.asarray(
+        config.base_speeds_mps if base_speeds_mps is None else base_speeds_mps,
+        dtype=np.float64,
+    )
     depths = np.linspace(base_depths[0], base_depths[-1], config.interpolation_points)
 
     # Shifting the profile vertically moves the sound-channel axis without
@@ -66,17 +71,32 @@ def profile_from_parameters(
     return depths.astype(np.float32), speeds.astype(np.float32)
 
 
-def build_ssp_records(config: SSPFamilyConfig, n_samples: int, seed: int) -> list[SSPRecord]:
+def build_ssp_records(
+    config: SSPFamilyConfig,
+    n_samples: int,
+    seed: int,
+    template_cycle_stride: int = 1,
+) -> list[SSPRecord]:
     parameters = latin_hypercube_parameters(config, n_samples, seed)
     records = []
     for index, values in enumerate(parameters):
-        depths, speeds = profile_from_parameters(config, values)
+        profile = (
+            config.profiles[(index // template_cycle_stride) % len(config.profiles)]
+            if config.profiles
+            else None
+        )
+        depths, speeds = profile_from_parameters(
+            config,
+            values,
+            np.asarray(profile.speeds_mps) if profile is not None else None,
+        )
         records.append(
             SSPRecord(
                 sample_id=f"ssp_{index:05d}",
                 parameters=values,
                 depths_m=depths,
                 speeds_mps=speeds,
+                profile_name=profile.name if profile is not None else "base",
             )
         )
     return records

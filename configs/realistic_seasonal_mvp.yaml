@@ -1,0 +1,70 @@
+contract:
+  dataset_id: bashi_woa23_seasonal_single_gebco_slope_v0.2
+  seed: 20260828
+  frequency_hz: 1000.0
+  source_depth_m: 50.0
+  water_depth_m: 2000.0
+  range_start_m: 100.0
+  range_end_m: 50000.0
+  range_steps: 256
+  depth_start_m: 10.0
+  depth_end_m: 1990.0
+  depth_steps: 96
+  field_mode: incoherent
+  reference_num_rays: 25600
+  pilot_ray_counts: [3200, 6400, 12800, 25600]
+  invalid_tl_fill_db: 120.0
+  seabed:
+    kind: fluid
+    speed_mps: 1700.0
+    density_kgm3: 2000.0
+    attenuation_dbperlambda: 0.8
+  bathymetry:
+    name: bashi_gebco2026_single_smooth_slope
+    profiles:
+      - name: gebco_az216_low_dimensional
+        source: GEBCO_2026_Bashi_center_20.5N_121.5E_azimuth_216deg
+        processing: 9km_moving_average_then_affine_relief_compression_then_10km_resampling
+        ranges_m: [0, 10000, 20000, 30000, 40000, 50000]
+        depths_m: [2000.0, 2092.4, 2119.9, 2109.5, 2115.0, 2101.4]
+
+ssp_family:
+  name: bashi_woa23_seasonal_four_month_narrow
+  depths_m: [0, 50, 100, 200, 400, 700, 1000, 1300, 1600, 1800, 2000]
+  # The fallback is January; generation cycles through the four traceable templates below.
+  base_speeds_mps: [1534.533, 1534.504, 1532.402, 1520.977, 1500.882, 1486.868, 1482.651, 1483.565, 1486.674, 1489.226, 1489.821]
+  global_offset_mps: [-0.25, 0.25]
+  thermocline_amplitude_mps: [-0.35, 0.35]
+  channel_axis_shift_m: [-15.0, 15.0]
+  deep_gradient_mps: [-0.25, 0.25]
+  interpolation_points: 41
+  profiles:
+    - name: woa23_january
+      source: WOA23_decav_0.25_degree_month01_at_20.625N_121.625E
+      processing: TEOS10_then_depth_interpolation_with_annual_fill_below_1500m
+      speeds_mps: [1534.533, 1534.504, 1532.402, 1520.977, 1500.882, 1486.868, 1482.651, 1483.565, 1486.674, 1489.226, 1489.821]
+    - name: woa23_april
+      source: WOA23_decav_0.25_degree_month04_at_20.625N_121.625E
+      processing: TEOS10_then_depth_interpolation_with_annual_fill_below_1500m
+      speeds_mps: [1537.841, 1536.825, 1533.860, 1523.074, 1502.248, 1485.806, 1483.624, 1483.862, 1486.674, 1489.226, 1489.821]
+    - name: woa23_july
+      source: WOA23_decav_0.25_degree_month07_at_20.625N_121.625E
+      processing: TEOS10_then_depth_interpolation_with_annual_fill_below_1500m
+      speeds_mps: [1542.803, 1540.540, 1535.867, 1522.667, 1502.051, 1486.325, 1483.386, 1483.176, 1486.674, 1489.226, 1489.821]
+    - name: woa23_october
+      source: WOA23_decav_0.25_degree_month10_at_20.625N_121.625E
+      processing: TEOS10_then_depth_interpolation_with_annual_fill_below_1500m
+      speeds_mps: [1540.536, 1539.828, 1534.104, 1521.646, 1501.630, 1486.581, 1483.211, 1484.127, 1486.674, 1489.226, 1489.821]
+
+split:
+  train_fraction: 0.75
+  validation_fraction: 0.125
+  test_fraction: 0.125
+
+acceptance:
+  maximum_test_rmse_db: 2.0
+  maximum_test_mae_db: 2.0
+  maximum_p95_latency_ms: 100.0
+
+storage:
+  default_root: /mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate

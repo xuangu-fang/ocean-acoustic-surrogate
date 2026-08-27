@@ -58,19 +58,22 @@ def _bathymetry_for_record(
 
 def _dataset_splits(config: MVPConfig, n_samples: int) -> np.ndarray:
     family = config.contract.bathymetry
-    if family is None:
+    ssp_profile_count = max(1, len(config.ssp_family.profiles))
+    if family is None and ssp_profile_count == 1:
         return assign_splits(
             n_samples,
             config.contract.seed,
             config.split.train_fraction,
             config.split.validation_fraction,
         )
+    terrain_count = len(family.profiles) if family is not None else 1
+    group_count = terrain_count * ssp_profile_count
     splits = np.empty(n_samples, dtype="U10")
-    for profile_index in range(len(family.profiles)):
-        indices = np.arange(profile_index, n_samples, len(family.profiles))
+    for group_index in range(group_count):
+        indices = np.arange(group_index, n_samples, group_count)
         local = assign_splits(
             len(indices),
-            config.contract.seed + profile_index,
+            config.contract.seed + group_index,
             config.split.train_fraction,
             config.split.validation_fraction,
         )
@@ -161,7 +164,15 @@ def run_pilot(config: MVPConfig, n_samples: int = 8) -> Path:
     root = config.dataset_root / "pilot"
     root.mkdir(parents=True, exist_ok=True)
     os.environ["OUTPUT_DIR"] = str(root / "bellhop_cases")
-    records = build_ssp_records(config.ssp_family, n_samples, config.contract.seed + 100_000)
+    terrain_count = (
+        len(config.contract.bathymetry.profiles) if config.contract.bathymetry is not None else 1
+    )
+    records = build_ssp_records(
+        config.ssp_family,
+        n_samples,
+        config.contract.seed + 100_000,
+        template_cycle_stride=terrain_count,
+    )
     comparisons: dict[str, list[dict[str, float]]] = {}
     timings: dict[str, list[float]] = {str(rays): [] for rays in config.contract.pilot_ray_counts}
     failures = []
@@ -264,7 +275,15 @@ def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
     samples_root.mkdir(parents=True, exist_ok=True)
     os.environ["OUTPUT_DIR"] = str(root / "bellhop_cases")
 
-    records = build_ssp_records(config.ssp_family, n_samples, config.contract.seed)
+    terrain_count = (
+        len(config.contract.bathymetry.profiles) if config.contract.bathymetry is not None else 1
+    )
+    records = build_ssp_records(
+        config.ssp_family,
+        n_samples,
+        config.contract.seed,
+        template_cycle_stride=terrain_count,
+    )
     splits = _dataset_splits(config, n_samples)
     failures = []
     for index, (record, split) in enumerate(zip(records, splits)):
@@ -322,6 +341,7 @@ def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
                 "bathymetry_profile": (
                     selected_bathymetry.name if selected_bathymetry is not None else "flat"
                 ),
+                "ssp_profile": record.profile_name,
             }
             metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
         except Exception as exc:  # noqa: BLE001 - record failure and finish manifest
@@ -368,6 +388,7 @@ def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
         bathymetry_profiles=np.asarray(
             [record["bathymetry_profile"] for record in metadata_records]
         ),
+        ssp_profiles=np.asarray([record["ssp_profile"] for record in metadata_records]),
         **({"bathymetry_ranges_m": ranges} if config.contract.bathymetry is not None else {}),
     )
     project_root = Path(__file__).resolve().parents[2]

@@ -9,12 +9,93 @@ from pathlib import Path
 import matplotlib
 import numpy as np
 
+from .metrics import split_metrics
+
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 
 
 def project_root() -> Path:
     return Path(__file__).resolve().parents[2]
+
+
+def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
+    """Commit a lightweight statistical profile without copying the dataset into Git."""
+    manifest = json.loads(manifest_path.read_text())
+    with np.load(dataset_path) as raw:
+        tl = raw["tl_db"].astype(np.float32)
+        valid = raw["valid_mask"].astype(bool)
+        profiles = raw["ssp_speeds_mps"].astype(np.float32)
+        parameters = raw["parameters"].astype(np.float32)
+        ssp_depths = raw["ssp_depths_m"].astype(np.float32)
+        depths = raw["depths_m"].astype(np.float32)
+        ranges = raw["ranges_m"].astype(np.float32)
+        splits = raw["splits"].astype(str)
+    train = np.flatnonzero(splits == "train")
+    test = np.flatnonzero(splits == "test")
+    counts = valid[train].sum(axis=0)
+    mean_field = np.divide(
+        np.where(valid[train], tl[train], 0.0).sum(axis=0),
+        counts,
+        out=np.zeros_like(tl[0]),
+        where=counts > 0,
+    )
+    baseline = np.broadcast_to(mean_field, tl[test].shape)
+    parameter_names = [
+        "global_offset_mps",
+        "thermocline_amplitude_mps",
+        "axis_shift_m",
+        "deep_gradient_mps",
+    ]
+    summary = {
+        "dataset_id": manifest["dataset_id"],
+        "dataset_path": str(dataset_path),
+        "dataset_sha256": manifest["dataset_sha256"],
+        "n_samples": manifest["n_samples"],
+        "split_counts": manifest["split_counts"],
+        "field_shape": manifest["shape"],
+        "finite_coverage": manifest["finite_coverage"],
+        "bellhop_wall_seconds": manifest["bellhop_wall_seconds"],
+        "dataset_size_bytes": dataset_path.stat().st_size,
+        "parameter_ranges": {
+            name: {"minimum": float(parameters[:, i].min()), "maximum": float(parameters[:, i].max())}
+            for i, name in enumerate(parameter_names)
+        },
+        "tl_db": {
+            "minimum": float(tl[valid].min()),
+            "maximum": float(tl[valid].max()),
+            "mean": float(tl[valid].mean()),
+            "standard_deviation": float(tl[valid].std()),
+        },
+        "training_mean_field_baseline_test": split_metrics(
+            tl[test], baseline, valid[test]
+        )["aggregate"],
+    }
+    output = project_root() / "docs/results/dataset_summary.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5), constrained_layout=True)
+    for profile in profiles[:: max(1, len(profiles) // 80)]:
+        axes[0].plot(profile, ssp_depths, color="#7fa6c9", alpha=0.18)
+    axes[0].plot(profiles.mean(axis=0), ssp_depths, color="#153f66", linewidth=2)
+    axes[0].invert_yaxis()
+    axes[0].set(xlabel="Sound speed (m/s)", ylabel="Depth (m)", title="Frozen SSP family")
+    extent = [ranges[0] / 1000, ranges[-1] / 1000, depths[-1], depths[0]]
+    valid_tl = np.where(valid, tl, np.nan)
+    mean = np.nanmean(valid_tl, axis=0)
+    std = np.nanstd(valid_tl, axis=0)
+    image = axes[1].imshow(mean, aspect="auto", extent=extent, cmap="viridis")
+    axes[1].set(xlabel="Range (km)", ylabel="Depth (m)", title="Mean Bellhop TL")
+    fig.colorbar(image, ax=axes[1], label="dB")
+    image = axes[2].imshow(std, aspect="auto", extent=extent, cmap="magma")
+    axes[2].set(xlabel="Range (km)", ylabel="Depth (m)", title="Across-SSP TL standard deviation")
+    fig.colorbar(image, ax=axes[2], label="dB")
+    asset = project_root() / "docs/assets/dataset_profile.png"
+    asset.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(asset, dpi=170)
+    plt.close(fig)
+    return output
 
 
 def plot_prediction_examples(run_dir: Path, output: Path) -> None:

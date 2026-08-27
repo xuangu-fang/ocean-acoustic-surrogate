@@ -199,8 +199,26 @@ def write_campaign_summary(run_dirs: list[Path], output_json: Path) -> dict:
                 "test_p95_absolute_error_db": metrics["metrics"]["test"]["aggregate"][
                     "p95_absolute_error_db"
                 ],
+                "test_p90_sample_rmse_db": metrics["metrics"]["test"]["aggregate"][
+                    "p90_sample_rmse_db"
+                ],
+                "test_worst_sample_rmse_db": metrics["metrics"]["test"]["aggregate"][
+                    "worst_sample_rmse_db"
+                ],
                 "test_high_gradient_rmse_db": metrics["metrics"]["test"]["high_gradient"][
                     "rmse_db"
+                ],
+                "mean_field_baseline_test_rmse_db": metrics["mean_field_baseline_test"][
+                    "rmse_db"
+                ],
+                "terrain_mean_baseline_test_rmse_db": (
+                    metrics["terrain_mean_baseline_test"]["rmse_db"]
+                    if metrics["terrain_mean_baseline_test"] is not None
+                    else None
+                ),
+                "baseline_improvement_rmse_db": metrics["baseline_improvement_rmse_db"],
+                "baseline_rmse_reduction_percent": metrics[
+                    "baseline_rmse_reduction_percent"
                 ],
                 "gpu_p95_latency_ms": metrics["latency"]["gpu"]["p95_ms"]
                 if metrics["latency"]["gpu"]

@@ -11,7 +11,7 @@ training_defaults:
 experiments:
   - id: real_r1_small_terrain_fno
     hypothesis: A compact terrain-aware FNO should beat the informative global mean baseline.
-    minimum_mean_baseline_test_rmse_db: 2.0
+    minimum_mean_baseline_test_rmse_db: 4.0
     model:
       hidden_channels: 24
       modes_depth: 12
@@ -28,7 +28,7 @@ experiments:
 
   - id: real_r2_terrain_fno
     hypothesis: Additional anisotropic modes recover terrain-dependent convergence zones.
-    minimum_mean_baseline_test_rmse_db: 2.0
+    minimum_mean_baseline_test_rmse_db: 4.0
     model:
       hidden_channels: 32
       modes_depth: 16
@@ -45,7 +45,7 @@ experiments:
 
   - id: real_r3_terrain_anchor_fno
     hypothesis: Train-only terrain anchors isolate SSP-driven residuals without test leakage.
-    minimum_mean_baseline_test_rmse_db: 2.0
+    minimum_mean_baseline_test_rmse_db: 4.0
     target_transform: terrain_mean
     model:
       hidden_channels: 24

@@ -164,16 +164,31 @@ def run_experiment(
         bathymetry_depths_m=bathymetry,
     )
     indices = {split: np.flatnonzero(splits == split) for split in ("train", "validation", "test")}
+    train_index = indices["train"]
+    train_samples_per_group = config.get("train_samples_per_group")
+    if train_samples_per_group is not None:
+        rng = np.random.default_rng(seed + 101)
+        selected_train = []
+        for group in np.unique(terrain_groups[train_index]):
+            candidates = train_index[terrain_groups[train_index] == group]
+            count = int(train_samples_per_group)
+            if count <= 0 or count > len(candidates):
+                raise ValueError(
+                    f"train_samples_per_group={count} is invalid for {group} "
+                    f"with {len(candidates)} available samples"
+                )
+            selected_train.extend(rng.choice(candidates, size=count, replace=False).tolist())
+        train_index = np.asarray(sorted(selected_train), dtype=np.int64)
     target_transform_name = str(experiment.get("target_transform", "global_mean"))
     if target_transform_name == "terrain_mean":
         transform = TargetTransform.fit_grouped(
-            targets_db[indices["train"]],
-            masks[indices["train"]],
-            terrain_groups[indices["train"]],
+            targets_db[train_index],
+            masks[train_index],
+            terrain_groups[train_index],
         )
         normalized_targets = transform.encode(targets_db, terrain_groups)[:, None]
     elif target_transform_name == "global_mean":
-        transform = TargetTransform.fit(targets_db[indices["train"]], masks[indices["train"]])
+        transform = TargetTransform.fit(targets_db[train_index], masks[train_index])
         normalized_targets = transform.encode(targets_db)[:, None]
     else:
         raise ValueError(f"unknown target_transform {target_transform_name}")
@@ -181,7 +196,6 @@ def run_experiment(
     targets = torch.from_numpy(normalized_targets)
     mask_tensor = torch.from_numpy(masks[:, None])
 
-    train_index = indices["train"]
     loader = DataLoader(
         TensorDataset(features[train_index], targets[train_index], mask_tensor[train_index]),
         batch_size=int(config["batch_size"]),
@@ -310,9 +324,9 @@ def run_experiment(
     terrain_baseline_test = None
     if np.any(terrain_groups != "flat"):
         terrain_transform = TargetTransform.fit_grouped(
-            targets_db[indices["train"]],
-            masks[indices["train"]],
-            terrain_groups[indices["train"]],
+            targets_db[train_index],
+            masks[train_index],
+            terrain_groups[train_index],
         )
         terrain_mean = terrain_transform._means(terrain_groups)
         terrain_baseline_test = split_metrics(
@@ -385,6 +399,7 @@ def run_experiment(
         "parameter_count": parameter_count,
         "best_epoch": best_epoch,
         "training_seconds": training_seconds,
+        "effective_train_samples": len(train_index),
         "target_transform": {
             "residual_scale_db": transform.residual_scale_db,
             "name": target_transform_name,
@@ -401,6 +416,7 @@ def run_experiment(
         "sample_ids": {
             split: sample_ids[split_index].tolist() for split, split_index in indices.items()
         },
+        "effective_training_sample_ids": sample_ids[train_index].tolist(),
     }
     checkpoint = {
         "model_state": best_state,

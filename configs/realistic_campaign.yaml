@@ -80,3 +80,45 @@ experiments:
     loss:
       gradient_weight: 0.0
       convergence_weight: 0.0
+
+  - id: real_r5_anchor_data24
+    hypothesis: Six training fields per terrain test the low-data edge of the anchored method.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    target_transform: terrain_mean
+    training:
+      train_samples_per_group: 6
+    model:
+      hidden_channels: 24
+      modes_depth: 12
+      modes_range: 24
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      zero_output_init: true
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: real_r6_anchor_data48
+    hypothesis: Twelve training fields per terrain quantify the midpoint of the learning curve.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    target_transform: terrain_mean
+    training:
+      train_samples_per_group: 12
+    model:
+      hidden_channels: 24
+      modes_depth: 12
+      modes_range: 24
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      zero_output_init: true
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0

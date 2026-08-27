@@ -189,6 +189,9 @@ def write_campaign_summary(run_dirs: list[Path], output_json: Path) -> dict:
                 "parameter_count": metrics["parameter_count"],
                 "best_epoch": metrics["best_epoch"],
                 "training_seconds": metrics["training_seconds"],
+                "effective_train_samples": metrics.get(
+                    "effective_train_samples", len(metrics["sample_ids"]["train"])
+                ),
                 "initial_train_loss": history[0]["train_loss"],
                 "final_train_loss": history[-1]["train_loss"],
                 "best_validation_rmse_db": min(

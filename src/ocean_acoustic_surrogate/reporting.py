@@ -87,6 +87,7 @@ def write_campaign_summary(run_dirs: list[Path], output_json: Path) -> dict:
     records = []
     for run_dir in run_dirs:
         metrics = json.loads((run_dir / "metrics.json").read_text())
+        history = json.loads((run_dir / "history.json").read_text())
         records.append(
             {
                 "experiment_id": metrics["experiment_id"],
@@ -95,6 +96,11 @@ def write_campaign_summary(run_dirs: list[Path], output_json: Path) -> dict:
                 "parameter_count": metrics["parameter_count"],
                 "best_epoch": metrics["best_epoch"],
                 "training_seconds": metrics["training_seconds"],
+                "initial_train_loss": history[0]["train_loss"],
+                "final_train_loss": history[-1]["train_loss"],
+                "best_validation_rmse_db": min(
+                    record["validation_rmse_db"] for record in history
+                ),
                 "test_rmse_db": metrics["metrics"]["test"]["aggregate"]["rmse_db"],
                 "test_mae_db": metrics["metrics"]["test"]["aggregate"]["mae_db"],
                 "test_p95_absolute_error_db": metrics["metrics"]["test"]["aggregate"][
@@ -143,11 +149,47 @@ def plot_campaign(summary: dict, output: Path) -> None:
     plt.close(fig)
 
 
+def plot_training_curves(run_dirs: list[Path], output: Path) -> None:
+    """Plot the optimization trace for every campaign round."""
+    fig, axes = plt.subplots(1, 2, figsize=(13, 4.8), constrained_layout=True)
+    for run_dir in run_dirs:
+        metrics = json.loads((run_dir / "metrics.json").read_text())
+        history = json.loads((run_dir / "history.json").read_text())
+        epochs = [record["epoch"] for record in history]
+        label = metrics["experiment_id"]
+        axes[0].plot(epochs, [record["train_loss"] for record in history], label=label)
+        axes[1].plot(
+            epochs,
+            [record["validation_rmse_db"] for record in history],
+            label=label,
+        )
+    axes[0].set(
+        xlabel="Epoch",
+        ylabel="Training objective",
+        title="Training loss by iteration",
+        yscale="log",
+    )
+    axes[1].set(
+        xlabel="Epoch",
+        ylabel="Validation RMSE (dB)",
+        title="Validation trajectory",
+    )
+    axes[1].axhline(2.0, color="black", linestyle="--", linewidth=1, label="2 dB gate")
+    for axis in axes:
+        axis.grid(alpha=0.2)
+        axis.legend(fontsize=8)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output, dpi=170)
+    plt.close(fig)
+
+
 def commit_lightweight_results(summary: dict) -> None:
     root = project_root()
     output_json = root / "docs/results/campaign_summary.json"
     output_json.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
     plot_campaign(summary, root / "docs/assets/campaign_comparison.png")
+    run_dirs = [Path(record["run_dir"]) for record in summary["experiments"]]
+    plot_training_curves(run_dirs, root / "docs/assets/training_curves.png")
     best_run = Path(summary["best"]["run_dir"])
     plot_prediction_examples(best_run, root / "docs/assets/best_prediction_examples.png")
     shutil.copy2(best_run / "metrics.json", root / "docs/results/best_metrics.json")

@@ -18,7 +18,11 @@ checkpoint 和完整日志保存在环境变量 `OCEAN_SURROGATE_ROOT` 指向的
 512 条 25,600-ray Bellhop 标签已全部成功生成并冻结。五轮实验的精度优胜模型在密封
 测试集达到 RMSE 0.5165 dB、MAE 0.1802 dB，A100 完整推理 P95 4.73 ms；1.33 M
 参数的小模型在独立 CPU 复核中达到 RMSE 0.7582 dB、P95 38.32 ms。两者均显著通过
-2 dB / 100 ms 门槛。完整方法、负结果和适用边界见
+2 dB / 100 ms 门槛。
+
+面向甲方的完整数据方法、公式、baseline、五轮消融、误差分析、部署边界和复现说明见
+[`docs/Ocean_Acoustic_Surrogate_Whitepaper_v1.0.pdf`](docs/Ocean_Acoustic_Surrogate_Whitepaper_v1.0.pdf)；
+可编辑 LaTeX 源码和图表位于 [`docs/whitepaper/`](docs/whitepaper/)。精简技术记录另见
 [`docs/project_report.md`](docs/project_report.md)。
 
 ## 快速开始

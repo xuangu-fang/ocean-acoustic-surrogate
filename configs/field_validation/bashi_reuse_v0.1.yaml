@@ -1,0 +1,42 @@
+experiment_id: bashi_reuse_v0.1_f500_z50_r50_d2000
+
+source:
+  dataset_path: /mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-field-project/data/samples/bashi_phase1_preview_v0.3_540/dataset.npz
+  environment_dataset: bashi_phase1_v0.1
+  bathymetry_product: GEBCO_2026
+  ssp_product: WOA23_0.25_degree_monthly_climatology_TEOS10
+  reference_solver: Bellhop
+  reference_num_rays: 3200
+
+slice:
+  frequency_hz: 500.0
+  source_depth_m: 50.0
+  range_end_m: 50000.0
+  depth_end_m: 2000.0
+  feature_source: reference_environment
+
+model:
+  hidden_channels: 24
+  modes_depth: 12
+  modes_range: 24
+  n_layers: 4
+  padding_depth: 8
+  padding_range: 16
+  residual_blocks: true
+  local_kernel_size: 1
+
+training:
+  seed: 20260827
+  batch_size: 8
+  max_epochs: 180
+  early_stopping_patience: 35
+  learning_rate: 0.001
+  weight_decay: 0.00001
+
+acceptance:
+  maximum_test_rmse_db: 2.0
+  maximum_test_mae_db: 2.0
+  maximum_p95_latency_ms: 100.0
+
+storage:
+  output_root: /mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate/field_validation

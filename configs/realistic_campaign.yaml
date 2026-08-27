@@ -1,0 +1,44 @@
+training_defaults:
+  seed: 20260828
+  batch_size: 16
+  max_epochs: 220
+  early_stopping_patience: 40
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  scheduler: cosine
+  target_normalization: field_mean
+
+experiments:
+  - id: real_r1_small_terrain_fno
+    hypothesis: A compact terrain-aware FNO should beat the informative global mean baseline.
+    minimum_mean_baseline_test_rmse_db: 2.0
+    model:
+      hidden_channels: 24
+      modes_depth: 12
+      modes_range: 24
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: real_r2_terrain_fno
+    hypothesis: Additional anisotropic modes recover terrain-dependent convergence zones.
+    minimum_mean_baseline_test_rmse_db: 2.0
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0

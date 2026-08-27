@@ -16,6 +16,8 @@ from typing import Any
 import numpy as np
 from ocean_acoustic_agent import SimulationTask, run_simulation
 from ocean_acoustic_agent.schemas import (
+    BathymetryPoint,
+    BathymetryProfile,
     EnvironmentSpec,
     SeabedType,
     SoundSpeedPoint,
@@ -23,7 +25,7 @@ from ocean_acoustic_agent.schemas import (
 )
 from ocean_acoustic_agent.schemas.task import ReceiverGrid
 
-from .config import MVPConfig
+from .config import BathymetryProfileConfig, MVPConfig
 from .ssp import PARAMETER_NAMES, SSPRecord, assign_splits, build_ssp_records
 
 
@@ -44,11 +46,55 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _bathymetry_for_record(
+    config: MVPConfig, record: SSPRecord
+) -> BathymetryProfileConfig | None:
+    family = config.contract.bathymetry
+    if family is None:
+        return None
+    sample_index = int(record.sample_id.rsplit("_", maxsplit=1)[-1])
+    return family.profiles[sample_index % len(family.profiles)]
+
+
+def _dataset_splits(config: MVPConfig, n_samples: int) -> np.ndarray:
+    family = config.contract.bathymetry
+    if family is None:
+        return assign_splits(
+            n_samples,
+            config.contract.seed,
+            config.split.train_fraction,
+            config.split.validation_fraction,
+        )
+    splits = np.empty(n_samples, dtype="U10")
+    for profile_index in range(len(family.profiles)):
+        indices = np.arange(profile_index, n_samples, len(family.profiles))
+        local = assign_splits(
+            len(indices),
+            config.contract.seed + profile_index,
+            config.split.train_fraction,
+            config.split.validation_fraction,
+        )
+        splits[indices] = local
+    return splits
+
+
 def build_task(config: MVPConfig, record: SSPRecord, num_rays: int, task_id: str) -> SimulationTask:
     contract = config.contract
     seabed = contract.seabed
+    bathymetry = None
+    selected_bathymetry = _bathymetry_for_record(config, record)
+    if selected_bathymetry is not None:
+        bathymetry = BathymetryProfile(
+            points=[
+                BathymetryPoint(range_m=float(distance), depth_m=float(depth))
+                for distance, depth in zip(
+                    selected_bathymetry.ranges_m, selected_bathymetry.depths_m
+                )
+            ]
+        )
     environment = EnvironmentSpec(
         water_depth_m=contract.water_depth_m,
+        bathymetry=bathymetry,
         ssp=SoundSpeedProfile(
             points=[
                 SoundSpeedPoint(depth_m=float(depth), speed_mps=float(speed))
@@ -87,6 +133,9 @@ def build_task(config: MVPConfig, record: SSPRecord, num_rays: int, task_id: str
             "ssp_family": config.ssp_family.name,
             "parameter_names": list(PARAMETER_NAMES),
             "parameters": record.parameters.tolist(),
+            "bathymetry_profile": (
+                selected_bathymetry.name if selected_bathymetry is not None else "flat"
+            ),
         },
     )
 
@@ -216,12 +265,7 @@ def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
     os.environ["OUTPUT_DIR"] = str(root / "bellhop_cases")
 
     records = build_ssp_records(config.ssp_family, n_samples, config.contract.seed)
-    splits = assign_splits(
-        n_samples,
-        config.contract.seed,
-        config.split.train_fraction,
-        config.split.validation_fraction,
-    )
+    splits = _dataset_splits(config, n_samples)
     failures = []
     for index, (record, split) in enumerate(zip(records, splits)):
         sample_dir = samples_root / record.sample_id
@@ -240,6 +284,16 @@ def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
             tl, ranges, depths, wall_seconds, case_dir = _run_task(task)
             valid = np.isfinite(tl)
             scored = np.where(valid, tl, config.contract.invalid_tl_fill_db).astype(np.float32)
+            selected_bathymetry = _bathymetry_for_record(config, record)
+            bathymetry_on_grid = (
+                np.interp(
+                    ranges,
+                    selected_bathymetry.ranges_m,
+                    selected_bathymetry.depths_m,
+                ).astype(np.float32)
+                if selected_bathymetry is not None
+                else None
+            )
             np.savez_compressed(
                 array_path,
                 tl_db=scored,
@@ -249,6 +303,11 @@ def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
                 ssp_depths_m=record.depths_m,
                 ssp_speeds_mps=record.speeds_mps,
                 parameters=record.parameters,
+                **(
+                    {"bathymetry_depths_m": bathymetry_on_grid}
+                    if bathymetry_on_grid is not None
+                    else {}
+                ),
             )
             metadata = {
                 "sample_id": record.sample_id,
@@ -260,6 +319,9 @@ def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
                 "num_rays": config.contract.reference_num_rays,
                 "finite_coverage": float(valid.mean()),
                 "config_hash": config.config_hash,
+                "bathymetry_profile": (
+                    selected_bathymetry.name if selected_bathymetry is not None else "flat"
+                ),
             }
             metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
         except Exception as exc:  # noqa: BLE001 - record failure and finish manifest
@@ -273,6 +335,8 @@ def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
         "ssp_speeds_mps": [],
         "parameters": [],
     }
+    if config.contract.bathymetry is not None:
+        arrays["bathymetry_depths_m"] = []
     metadata_records = []
     ranges = depths = ssp_depths = None
     for record in records:
@@ -301,6 +365,10 @@ def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
         ssp_depths_m=ssp_depths,
         sample_ids=np.asarray([record["sample_id"] for record in metadata_records]),
         splits=np.asarray([record["split"] for record in metadata_records]),
+        bathymetry_profiles=np.asarray(
+            [record["bathymetry_profile"] for record in metadata_records]
+        ),
+        **({"bathymetry_ranges_m": ranges} if config.contract.bathymetry is not None else {}),
     )
     project_root = Path(__file__).resolve().parents[2]
     acoustic_root = project_root.parent / "ocean-acoustic-agent"

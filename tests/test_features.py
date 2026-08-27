@@ -9,6 +9,16 @@ def test_feature_channels_are_explicit():
     ranges = np.linspace(100, 50000, 8, dtype=np.float32)
     assert build_features(profiles, ranges, use_hankel=False).shape == (2, 1, 4, 8)
     assert build_features(profiles, ranges, use_hankel=True).shape == (2, 2, 4, 8)
+    bathymetry = np.linspace(2000, 2080, 8, dtype=np.float32)
+    assert (
+        build_features(
+            profiles,
+            ranges,
+            use_hankel=False,
+            bathymetry_depths_m=bathymetry,
+        ).shape
+        == (2, 2, 4, 8)
+    )
 
 
 def test_target_transform_round_trip():

@@ -34,12 +34,18 @@ def verify_run(
         ssp_depths = raw["ssp_depths_m"].astype(np.float32)
         depths = raw["depths_m"].astype(np.float32)
         ranges = raw["ranges_m"].astype(np.float32)
+        bathymetry = (
+            raw["bathymetry_depths_m"].astype(np.float32)
+            if "bathymetry_depths_m" in raw
+            else None
+        )
         splits = raw["splits"].astype(str)
     test = np.flatnonzero(splits == "test")
     features_np = build_features(
         interpolate_ssp(ssp_depths, profiles, depths),
         ranges,
         use_hankel=bool(checkpoint["model_config"].get("use_hankel_feature", False)),
+        bathymetry_depths_m=bathymetry,
     )
     transform = TargetTransform(
         mean_field_db=np.asarray(checkpoint["target_transform"]["mean_field_db"]),

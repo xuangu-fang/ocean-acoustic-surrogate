@@ -19,6 +19,38 @@ class SeabedConfig(BaseModel):
     attenuation_dbperlambda: float = 0.8
 
 
+class BathymetryProfileConfig(BaseModel):
+    name: str
+    ranges_m: list[float]
+    depths_m: list[float]
+    source: str
+    processing: str
+
+    @model_validator(mode="after")
+    def validate_profile(self) -> BathymetryProfileConfig:
+        if len(self.ranges_m) != len(self.depths_m) or len(self.ranges_m) < 2:
+            raise ValueError("bathymetry ranges/depths must have equal length >= 2")
+        if self.ranges_m != sorted(self.ranges_m):
+            raise ValueError("bathymetry ranges must be ascending")
+        if min(self.depths_m) <= 0:
+            raise ValueError("bathymetry depths must be positive")
+        return self
+
+
+class BathymetryFamilyConfig(BaseModel):
+    name: str
+    profiles: list[BathymetryProfileConfig]
+
+    @model_validator(mode="after")
+    def validate_family(self) -> BathymetryFamilyConfig:
+        if not self.profiles:
+            raise ValueError("bathymetry family requires at least one profile")
+        names = [profile.name for profile in self.profiles]
+        if len(names) != len(set(names)):
+            raise ValueError("bathymetry profile names must be unique")
+        return self
+
+
 class ContractConfig(BaseModel):
     dataset_id: str
     seed: int
@@ -36,6 +68,7 @@ class ContractConfig(BaseModel):
     pilot_ray_counts: list[int] = Field(default_factory=lambda: [3200, 6400, 12800, 25600])
     invalid_tl_fill_db: float = 120.0
     seabed: SeabedConfig = Field(default_factory=SeabedConfig)
+    bathymetry: BathymetryFamilyConfig | None = None
 
     @model_validator(mode="after")
     def validate_fixed_acceptance_domain(self) -> ContractConfig:
@@ -43,8 +76,19 @@ class ContractConfig(BaseModel):
             raise ValueError("MVP contract requires frequency_hz=1000")
         if self.range_end_m != 50000.0:
             raise ValueError("MVP contract requires range_end_m=50000")
-        if self.depth_end_m >= self.water_depth_m:
+        minimum_bottom = (
+            min(depth for profile in self.bathymetry.profiles for depth in profile.depths_m)
+            if self.bathymetry is not None
+            else self.water_depth_m
+        )
+        if self.depth_end_m >= minimum_bottom:
             raise ValueError("depth_end_m must remain above the seabed")
+        if self.bathymetry is not None:
+            for profile in self.bathymetry.profiles:
+                if profile.ranges_m[0] > 0:
+                    raise ValueError("bathymetry must start at or before source range 0")
+                if profile.ranges_m[-1] < self.range_end_m:
+                    raise ValueError("bathymetry must cover the full calculation range")
         if self.field_mode != "incoherent":
             raise ValueError("MVP label contract requires incoherent Bellhop TL")
         return self

@@ -31,12 +31,21 @@ def build_features(
     ranges_m: np.ndarray,
     *,
     use_hankel: bool,
+    bathymetry_depths_m: np.ndarray | None = None,
 ) -> np.ndarray:
     n_samples, n_depths = profiles_on_grid.shape
     n_ranges = len(ranges_m)
     sound_speed = ((profiles_on_grid - 1500.0) / 50.0)[:, None, :, None]
     sound_speed = np.broadcast_to(sound_speed, (n_samples, 1, n_depths, n_ranges))
     channels = [sound_speed]
+    if bathymetry_depths_m is not None:
+        bottom = np.asarray(bathymetry_depths_m, dtype=np.float32)
+        if bottom.shape == (n_ranges,):
+            bottom = np.broadcast_to(bottom[None, :], (n_samples, n_ranges))
+        if bottom.shape != (n_samples, n_ranges):
+            raise ValueError("bathymetry_depths_m must be [range] or [sample, range]")
+        terrain = (bottom / 2000.0)[:, None, None, :]
+        channels.append(np.broadcast_to(terrain, (n_samples, 1, n_depths, n_ranges)))
     if use_hankel:
         hankel = hankel_feature(ranges_m)[None, None, None, :]
         hankel = np.broadcast_to(hankel, (n_samples, 1, n_depths, n_ranges))

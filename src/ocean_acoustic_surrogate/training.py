@@ -143,6 +143,11 @@ def run_experiment(
         ssp_depths = raw["ssp_depths_m"].astype(np.float32)
         depths = raw["depths_m"].astype(np.float32)
         ranges = raw["ranges_m"].astype(np.float32)
+        bathymetry = (
+            raw["bathymetry_depths_m"].astype(np.float32)
+            if "bathymetry_depths_m" in raw
+            else None
+        )
         splits = raw["splits"].astype(str)
         sample_ids = raw["sample_ids"].astype(str)
     grid_profiles = interpolate_ssp(ssp_depths, ssp_profiles, depths)
@@ -150,6 +155,7 @@ def run_experiment(
         grid_profiles,
         ranges,
         use_hankel=bool(experiment["model"].get("use_hankel_feature", False)),
+        bathymetry_depths_m=bathymetry,
     )
     indices = {split: np.flatnonzero(splits == split) for split in ("train", "validation", "test")}
     transform = TargetTransform.fit(targets_db[indices["train"]], masks[indices["train"]])
@@ -288,6 +294,11 @@ def run_experiment(
         "mae_pass": test_metric["mae_db"] <= mvp.acceptance.maximum_test_mae_db,
         "latency_pass": latency_metric["p95_ms"] <= mvp.acceptance.maximum_p95_latency_ms,
     }
+    minimum_baseline = experiment.get("minimum_mean_baseline_test_rmse_db")
+    if minimum_baseline is not None:
+        acceptance["mean_baseline_informative_pass"] = (
+            baseline_test["rmse_db"] > float(minimum_baseline)
+        )
     acceptance["overall_pass"] = all(acceptance.values())
     result = {
         "run_id": run_id,
@@ -313,6 +324,10 @@ def run_experiment(
             "residual_scale_db": transform.residual_scale_db,
         },
         "mean_field_baseline_test": baseline_test,
+        "baseline_improvement_rmse_db": baseline_test["rmse_db"] - test_metric["rmse_db"],
+        "baseline_rmse_reduction_percent": 100.0
+        * (baseline_test["rmse_db"] - test_metric["rmse_db"])
+        / baseline_test["rmse_db"],
         "metrics": metrics,
         "latency": latency,
         "acceptance": acceptance,
@@ -328,6 +343,7 @@ def run_experiment(
         "ranges_m": ranges,
         "depths_m": depths,
         "ssp_depths_m": ssp_depths,
+        "bathymetry_depths_m": bathymetry,
         "experiment_id": experiment["id"],
     }
     torch.save(checkpoint, run_dir / "model.pt")
@@ -342,6 +358,7 @@ def run_experiment(
         depths_m=depths,
         ssp_speeds_mps=ssp_profiles,
         ssp_depths_m=ssp_depths,
+        **({"bathymetry_depths_m": bathymetry} if bathymetry is not None else {}),
     )
     (run_dir / "history.json").write_text(json.dumps(history, indent=2) + "\n")
     (run_dir / "metrics.json").write_text(json.dumps(result, indent=2) + "\n")

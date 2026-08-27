@@ -1,0 +1,46 @@
+contract:
+  dataset_id: scs_june_narrow_v0.1
+  seed: 20260827
+  frequency_hz: 1000.0
+  source_depth_m: 50.0
+  water_depth_m: 2000.0
+  range_start_m: 100.0
+  range_end_m: 50000.0
+  range_steps: 256
+  depth_start_m: 10.0
+  depth_end_m: 1990.0
+  depth_steps: 96
+  field_mode: incoherent
+  reference_num_rays: 25600
+  pilot_ray_counts: [3200, 6400, 12800, 25600]
+  invalid_tl_fill_db: 120.0
+  seabed:
+    kind: fluid
+    speed_mps: 1700.0
+    density_kgm3: 2000.0
+    attenuation_dbperlambda: 0.8
+
+ssp_family:
+  name: scs_june_synthetic_narrow
+  # Smooth low-dimensional family centered on the supplied June deep-ocean profile.
+  depths_m: [0, 50, 100, 200, 400, 700, 1000, 1300, 1600, 1800, 2000]
+  base_speeds_mps: [1545, 1537, 1529, 1516, 1501, 1491, 1487, 1488, 1491, 1493, 1496]
+  global_offset_mps: [-1.5, 1.5]
+  thermocline_amplitude_mps: [-2.0, 2.0]
+  channel_axis_shift_m: [-100.0, 100.0]
+  deep_gradient_mps: [-1.5, 1.5]
+  interpolation_points: 33
+
+split:
+  train_fraction: 0.75
+  validation_fraction: 0.125
+  test_fraction: 0.125
+
+acceptance:
+  maximum_test_rmse_db: 2.0
+  maximum_test_mae_db: 2.0
+  maximum_p95_latency_ms: 100.0
+
+storage:
+  default_root: /mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate
+

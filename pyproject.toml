@@ -1,0 +1,48 @@
+[project]
+name = "ocean-acoustic-surrogate"
+version = "0.1.0"
+description = "Narrow-domain Bellhop surrogate for 1 kHz, 50 km deep-ocean transmission loss"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "matplotlib>=3.9",
+  "numpy>=2.0",
+  "ocean-acoustic-agent",
+  "pydantic>=2.8",
+  "pyyaml>=6.0",
+  "scipy>=1.14",
+  "torch==2.11.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "ruff>=0.9",
+]
+
+[project.scripts]
+ocean-acoustic-surrogate = "ocean_acoustic_surrogate.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ocean_acoustic_surrogate"]
+
+[tool.uv.sources]
+ocean-acoustic-agent = { path = "../ocean-acoustic-agent", editable = true }
+torch = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

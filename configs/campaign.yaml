@@ -1,0 +1,92 @@
+training_defaults:
+  seed: 20260827
+  batch_size: 16
+  max_epochs: 180
+  early_stopping_patience: 35
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  scheduler: cosine
+  target_normalization: field_mean
+
+experiments:
+  - id: r1_fno_small
+    hypothesis: Small FNO establishes the data and optimization baseline.
+    model:
+      hidden_channels: 24
+      modes_depth: 12
+      modes_range: 24
+      n_layers: 4
+      padding_depth: 0
+      padding_range: 0
+      residual_blocks: false
+      local_kernel_size: 1
+      use_hankel_feature: false
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: r2_more_modes
+    hypothesis: Additional range modes recover convergence-zone structure.
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 0
+      padding_range: 0
+      residual_blocks: false
+      local_kernel_size: 1
+      use_hankel_feature: false
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: r3_padding_residual
+    hypothesis: Non-periodic padding and residual blocks reduce boundary ringing.
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: r4_hankel_local
+    hypothesis: Hankel spreading and a local spatial branch improve sharp ray paths.
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 3
+      use_hankel_feature: true
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: r5_structure_loss
+    hypothesis: Small gradient and high-gradient-cell weights sharpen convergence zones.
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 3
+      use_hankel_feature: true
+    loss:
+      gradient_weight: 0.05
+      convergence_weight: 1.0
+      convergence_quantile: 0.9
+

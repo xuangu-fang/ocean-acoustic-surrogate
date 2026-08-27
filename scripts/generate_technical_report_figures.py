@@ -1,4 +1,4 @@
-"""Generate reproducible, publication-quality figures for the client whitepaper."""
+"""Generate reproducible, publication-quality figures for the client technical report."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 matplotlib.use("Agg", force=True)
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "docs" / "whitepaper" / "assets"
+OUT = ROOT / "docs" / "technical_report" / "assets"
 ARTIFACT_ROOT = Path(
     os.environ.get("OCEAN_SURROGATE_ROOT", "/home/ubuntu/ocean-acoustic-surrogate-artifacts")
 )
@@ -147,7 +147,7 @@ def figure_pipeline() -> None:
         (0.02, "冻结环境族", "4 参数 SSP\nLatin hypercube", NAVY),
         (0.185, "高质量标签", "Bellhop 非相干 TL\n25,600 rays", BLUE),
         (0.35, "数据封存", "384 / 64 / 64\n哈希 + 有效掩膜", TEAL),
-        (0.515, "代理训练", "FNO2d 残差学习\n5 轮冻结消融", PURPLE),
+        (0.515, "代理训练", "改进型 FNO 残差学习\n冻结训练/验证/测试", PURPLE),
         (0.68, "密封测试", "RMSE / MAE\n最差样本 / 高梯度", ORANGE),
         (0.845, "交付验收", "新进程重载\n精度 + P95 延迟", GREEN),
     ]
@@ -235,7 +235,7 @@ def figure_model_architecture() -> None:
     arrow(ax, (0.46, 0.245), (0.56, 0.245))
     arrow(ax, (0.91, 0.56), (0.72, 0.36))
     ax.text(0.5, 0.94, "各向异性 FNO：学习 SSP 引起的声场残差", ha="center", fontsize=16, color=NAVY, fontweight="bold")
-    ax.text(0.5, 0.035, "R3: hidden=32, modes=(16,48), 4 层, padding=(8,16), 6.30M 参数", ha="center", fontsize=10.5, color=DARK)
+    ax.text(0.5, 0.035, "最终模型：hidden=32, modes=(16,48), 4 层, padding=(8,16), 6.30M 参数", ha="center", fontsize=10.5, color=DARK)
     save(fig, "fig04_model_architecture")
 
 
@@ -359,14 +359,14 @@ def figure_error_distribution(data: dict) -> None:
     x_base, y_base = ecdf(baseline_error)
     fig, axes = plt.subplots(1, 2, figsize=(14, 5.2), constrained_layout=True)
     axes[0].plot(x_base, y_base * 100, color="#8A97A3", linewidth=2, label="训练均值场 baseline")
-    axes[0].plot(x_model, y_model * 100, color=BLUE, linewidth=2.4, label="R3 FNO")
+    axes[0].plot(x_model, y_model * 100, color=BLUE, linewidth=2.4, label="改进型 FNO")
     axes[0].axvline(2, color=RED, linestyle="--", label="2 dB")
     axes[0].set(xlabel="有效网格绝对误差 (dB)", ylabel="累计网格比例 (%)", title="绝对误差累积分布", xlim=(0, 5), ylim=(0, 100))
     axes[0].grid()
     axes[0].legend()
     order = np.argsort(values["baseline_per_sample"])
     axes[1].plot(np.arange(1, 65), values["baseline_per_sample"][order], color="#8A97A3", linewidth=2, label="Baseline")
-    axes[1].plot(np.arange(1, 65), values["model_per_sample"][order], color=TEAL, linewidth=2.4, label="R3 FNO")
+    axes[1].plot(np.arange(1, 65), values["model_per_sample"][order], color=TEAL, linewidth=2.4, label="改进型 FNO")
     axes[1].axhline(2, color=RED, linestyle="--", label="2 dB")
     axes[1].set(xlabel="测试样本（按 baseline 难度排序）", ylabel="逐样本 RMSE (dB)", title="64 条测试样本逐场误差", ylim=(0, 2.1))
     axes[1].grid()
@@ -515,12 +515,8 @@ def main() -> None:
     figure_dataset_design(data)
     figure_label_quality(data)
     figure_model_architecture()
-    figure_training(data)
-    figure_ablation(data)
     figure_error_distribution(data)
     figure_error_maps(data)
-    figure_worst_case(data)
-    figure_acceptance(data)
     print(f"generated figures in {OUT}")
 
 

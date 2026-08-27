@@ -20,9 +20,9 @@ checkpoint 和完整日志保存在环境变量 `OCEAN_SURROGATE_ROOT` 指向的
 参数的小模型在独立 CPU 复核中达到 RMSE 0.7582 dB、P95 38.32 ms。两者均显著通过
 2 dB / 100 ms 门槛。
 
-面向甲方的完整数据方法、公式、baseline、五轮消融、误差分析、部署边界和复现说明见
-[`docs/Ocean_Acoustic_Surrogate_Whitepaper_v1.0.pdf`](docs/Ocean_Acoustic_Surrogate_Whitepaper_v1.0.pdf)；
-可编辑 LaTeX 源码和图表位于 [`docs/whitepaper/`](docs/whitepaper/)。精简技术记录另见
+面向甲方的任务定义、数据来源与构造、改进型 FNO 方法、实验协议和结果分析见
+[`docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.1.pdf`](docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.1.pdf)；
+可编辑 LaTeX 源码和图表位于 [`docs/technical_report/`](docs/technical_report/)。详细工程记录另见
 [`docs/project_report.md`](docs/project_report.md)。
 
 ## 快速开始

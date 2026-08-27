@@ -5,8 +5,11 @@ project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 agent_root="${OCEAN_AGENT_ROOT:-$(dirname "${project_root}")/ocean-acoustic-agent}"
 artifact_root="${OCEAN_SURROGATE_ROOT:-/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate}"
 mode="${REPRO_MODE:-check}"
-samples="${REPRO_SAMPLES:-512}"
+samples="${REPRO_SAMPLES:-128}"
 run_dir="${REPRO_RUN_DIR:-}"
+config="${REPRO_CONFIG:-configs/realistic_terrain_mvp.yaml}"
+campaign="${REPRO_CAMPAIGN:-configs/realistic_campaign.yaml}"
+experiment="${REPRO_EXPERIMENT:-real_r4_terrain_anchor_large_fno}"
 
 export OCEAN_SURROGATE_ROOT="${artifact_root}"
 
@@ -22,7 +25,10 @@ usage() {
     "Optional variables:" \
     "  OCEAN_AGENT_ROOT       sibling ocean-acoustic-agent repository" \
     "  OCEAN_SURROGATE_ROOT   large artifact root" \
-    "  REPRO_SAMPLES          sample count, default 512" \
+    "  REPRO_CONFIG           task/data config, default configs/realistic_terrain_mvp.yaml" \
+    "  REPRO_CAMPAIGN         experiment config, default configs/realistic_campaign.yaml" \
+    "  REPRO_EXPERIMENT       experiment id to train" \
+    "  REPRO_SAMPLES          sample count, default 128" \
     "  REPRO_RUN_DIR          run directory required by verify mode"
 }
 
@@ -55,7 +61,14 @@ if [[ "${mode}" == "check" ]]; then
   exit 0
 fi
 
-dataset_path="${artifact_root}/datasets/scs_june_narrow_v0.1/n${samples}/dataset.npz"
+dataset_path="$(uv run python - "${config}" "${samples}" <<'PY'
+import sys
+from ocean_acoustic_surrogate.config import MVPConfig
+
+config = MVPConfig.from_yaml(sys.argv[1])
+print(config.dataset_root / f"n{sys.argv[2]}" / "dataset.npz")
+PY
+)"
 
 if [[ "${mode}" == "full" ]]; then
   (
@@ -64,9 +77,9 @@ if [[ "${mode}" == "full" ]]; then
     uv sync --locked --extra dev
     uv run python scripts/check_env.py
   )
-  uv run ocean-acoustic-surrogate pilot configs/mvp.yaml --samples 8
-  uv run ocean-acoustic-surrogate generate configs/mvp.yaml --samples "${samples}"
-  uv run ocean-acoustic-surrogate profile configs/mvp.yaml --samples "${samples}"
+  uv run ocean-acoustic-surrogate pilot "${config}" --samples 8
+  uv run ocean-acoustic-surrogate generate "${config}" --samples "${samples}"
+  uv run ocean-acoustic-surrogate profile "${config}" --samples "${samples}"
 fi
 
 if [[ "${mode}" == "train" || "${mode}" == "full" ]]; then
@@ -76,8 +89,8 @@ if [[ "${mode}" == "train" || "${mode}" == "full" ]]; then
     exit 1
   fi
   uv run ocean-acoustic-surrogate campaign \
-    configs/mvp.yaml configs/campaign.yaml \
-    --samples "${samples}" --only r3_padding_residual
+    "${config}" "${campaign}" \
+    --samples "${samples}" --only "${experiment}"
   run_dir="$(uv run python -c '
 import json, os
 from pathlib import Path
@@ -93,6 +106,6 @@ if [[ "${mode}" == "verify" && -z "${run_dir}" ]]; then
 fi
 
 uv run ocean-acoustic-surrogate verify \
-  configs/mvp.yaml "${run_dir}" --samples "${samples}" --device auto
+  "${config}" "${run_dir}" --samples "${samples}" --device auto
 
 printf 'Reproduction completed.\nDataset: %s\nRun: %s\n' "${dataset_path}" "${run_dir}"

@@ -202,8 +202,23 @@ def run_experiment(
         eta_min=float(config["learning_rate"]) / 50.0,
     )
     validation_features = features[indices["validation"]]
-    best_rmse = float("inf")
-    best_state = None
+    initial_validation_normalized = _predict_batches(
+        model, validation_features, device, int(config["batch_size"])
+    )
+    initial_validation_db = transform.decode_tensor(
+        initial_validation_normalized,
+        terrain_groups[indices["validation"]]
+        if transform.group_mean_fields_db is not None
+        else None,
+    ).numpy()
+    best_rmse = tl_metrics(
+        targets_db[indices["validation"]],
+        initial_validation_db,
+        masks[indices["validation"]],
+    )["rmse_db"]
+    best_state = {
+        key: value.detach().cpu().clone() for key, value in model.state_dict().items()
+    }
     best_epoch = 0
     stale_epochs = 0
     history = []
@@ -251,7 +266,9 @@ def run_experiment(
         if validation_metric["rmse_db"] < best_rmse:
             best_rmse = validation_metric["rmse_db"]
             best_epoch = epoch
-            best_state = {key: value.detach().cpu() for key, value in model.state_dict().items()}
+            best_state = {
+                key: value.detach().cpu().clone() for key, value in model.state_dict().items()
+            }
             stale_epochs = 0
         else:
             stale_epochs += 1

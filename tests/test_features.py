@@ -28,3 +28,15 @@ def test_target_transform_round_trip():
     encoded = torch.from_numpy(transform.encode(targets))[:, None]
     decoded = transform.decode_tensor(encoded).numpy()
     assert np.allclose(decoded, targets)
+
+
+def test_grouped_target_transform_round_trip():
+    targets = np.arange(64, dtype=np.float32).reshape(4, 4, 4)
+    mask = np.ones_like(targets, dtype=bool)
+    groups = np.asarray(["a", "a", "b", "b"])
+    transform = TargetTransform.fit_grouped(targets, mask, groups)
+    encoded = torch.from_numpy(transform.encode(targets, groups))[:, None]
+    decoded = transform.decode_tensor(encoded, groups).numpy()
+    assert np.allclose(decoded, targets)
+    restored = TargetTransform.from_state_dict(transform.state_dict())
+    assert np.allclose(restored.decode_tensor(encoded, groups).numpy(), targets)

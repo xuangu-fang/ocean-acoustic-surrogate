@@ -40,6 +40,11 @@ def verify_run(
             else None
         )
         splits = raw["splits"].astype(str)
+        terrain_groups = (
+            raw["bathymetry_profiles"].astype(str)
+            if "bathymetry_profiles" in raw
+            else np.full(len(targets), "flat")
+        )
     test = np.flatnonzero(splits == "test")
     features_np = build_features(
         interpolate_ssp(ssp_depths, profiles, depths),
@@ -47,10 +52,7 @@ def verify_run(
         use_hankel=bool(checkpoint["model_config"].get("use_hankel_feature", False)),
         bathymetry_depths_m=bathymetry,
     )
-    transform = TargetTransform(
-        mean_field_db=np.asarray(checkpoint["target_transform"]["mean_field_db"]),
-        residual_scale_db=float(checkpoint["target_transform"]["residual_scale_db"]),
-    )
+    transform = TargetTransform.from_state_dict(checkpoint["target_transform"])
     model = build_model(checkpoint["model_config"], int(checkpoint["in_channels"]))
     model.load_state_dict(checkpoint["model_state"])
     if device_name not in {"auto", "cpu", "cuda"}:
@@ -68,7 +70,8 @@ def verify_run(
             torch.from_numpy(features_np[test]),
             device,
             int(recorded["training_config"]["batch_size"]),
-        )
+        ),
+        terrain_groups[test] if transform.group_mean_fields_db is not None else None,
     ).numpy()
     metrics = split_metrics(targets[test], prediction, masks[test])
     latency = _benchmark_latency(
@@ -77,6 +80,9 @@ def verify_run(
         transform,
         device,
         repeats=200,
+        groups=(
+            terrain_groups[test[:1]] if transform.group_mean_fields_db is not None else None
+        ),
     )
     original_rmse = float(recorded["metrics"]["test"]["aggregate"]["rmse_db"])
     recomputed_rmse = float(metrics["aggregate"]["rmse_db"])

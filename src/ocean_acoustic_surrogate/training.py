@@ -87,6 +87,7 @@ def _benchmark_latency(
     device: torch.device,
     *,
     repeats: int,
+    groups: np.ndarray | None = None,
 ) -> dict[str, float]:
     model = model.to(device).eval()
 
@@ -98,7 +99,7 @@ def _benchmark_latency(
         tensor = torch.from_numpy(one_feature.copy()).to(device)
         with torch.no_grad():
             output = model(tensor)
-            _ = transform.decode_tensor(output).cpu().numpy()
+            _ = transform.decode_tensor(output, groups).cpu().numpy()
         synchronize()
     values = []
     for _ in range(repeats):
@@ -106,7 +107,7 @@ def _benchmark_latency(
         tensor = torch.from_numpy(one_feature.copy()).to(device)
         with torch.no_grad():
             output = model(tensor)
-            _ = transform.decode_tensor(output).cpu().numpy()
+            _ = transform.decode_tensor(output, groups).cpu().numpy()
         synchronize()
         values.append((time.perf_counter() - started) * 1000.0)
     return {
@@ -150,6 +151,11 @@ def run_experiment(
         )
         splits = raw["splits"].astype(str)
         sample_ids = raw["sample_ids"].astype(str)
+        terrain_groups = (
+            raw["bathymetry_profiles"].astype(str)
+            if "bathymetry_profiles" in raw
+            else np.full(len(targets_db), "flat")
+        )
     grid_profiles = interpolate_ssp(ssp_depths, ssp_profiles, depths)
     features_np = build_features(
         grid_profiles,
@@ -158,8 +164,19 @@ def run_experiment(
         bathymetry_depths_m=bathymetry,
     )
     indices = {split: np.flatnonzero(splits == split) for split in ("train", "validation", "test")}
-    transform = TargetTransform.fit(targets_db[indices["train"]], masks[indices["train"]])
-    normalized_targets = transform.encode(targets_db)[:, None]
+    target_transform_name = str(experiment.get("target_transform", "global_mean"))
+    if target_transform_name == "terrain_mean":
+        transform = TargetTransform.fit_grouped(
+            targets_db[indices["train"]],
+            masks[indices["train"]],
+            terrain_groups[indices["train"]],
+        )
+        normalized_targets = transform.encode(targets_db, terrain_groups)[:, None]
+    elif target_transform_name == "global_mean":
+        transform = TargetTransform.fit(targets_db[indices["train"]], masks[indices["train"]])
+        normalized_targets = transform.encode(targets_db)[:, None]
+    else:
+        raise ValueError(f"unknown target_transform {target_transform_name}")
     features = torch.from_numpy(features_np)
     targets = torch.from_numpy(normalized_targets)
     mask_tensor = torch.from_numpy(masks[:, None])
@@ -211,7 +228,12 @@ def run_experiment(
         validation_normalized = _predict_batches(
             model, validation_features, device, int(config["batch_size"])
         )
-        validation_db = transform.decode_tensor(validation_normalized).numpy()
+        validation_db = transform.decode_tensor(
+            validation_normalized,
+            terrain_groups[indices["validation"]]
+            if transform.group_mean_fields_db is not None
+            else None,
+        ).numpy()
         validation_metric = tl_metrics(
             targets_db[indices["validation"]],
             validation_db,
@@ -247,7 +269,10 @@ def run_experiment(
     model.load_state_dict(best_state)
 
     prediction_normalized = _predict_batches(model, features, device, int(config["batch_size"]))
-    prediction_db = transform.decode_tensor(prediction_normalized).numpy()
+    prediction_db = transform.decode_tensor(
+        prediction_normalized,
+        terrain_groups if transform.group_mean_fields_db is not None else None,
+    ).numpy()
     metrics = {}
     for split, split_index in indices.items():
         split_result = split_metrics(
@@ -265,6 +290,19 @@ def run_experiment(
         mean_baseline[indices["test"]],
         masks[indices["test"]],
     )["aggregate"]
+    terrain_baseline_test = None
+    if np.any(terrain_groups != "flat"):
+        terrain_transform = TargetTransform.fit_grouped(
+            targets_db[indices["train"]],
+            masks[indices["train"]],
+            terrain_groups[indices["train"]],
+        )
+        terrain_mean = terrain_transform._means(terrain_groups)
+        terrain_baseline_test = split_metrics(
+            targets_db[indices["test"]],
+            terrain_mean[indices["test"]],
+            masks[indices["test"]],
+        )["aggregate"]
     latency = {
         "gpu": _benchmark_latency(
             model,
@@ -272,6 +310,11 @@ def run_experiment(
             transform,
             torch.device("cuda"),
             repeats=200,
+            groups=(
+                terrain_groups[indices["test"][:1]]
+                if transform.group_mean_fields_db is not None
+                else None
+            ),
         )
         if torch.cuda.is_available()
         else None,
@@ -284,6 +327,11 @@ def run_experiment(
         transform,
         torch.device("cpu"),
         repeats=20,
+        groups=(
+            terrain_groups[indices["test"][:1]]
+            if transform.group_mean_fields_db is not None
+            else None
+        ),
     )
     model.to(device)
 
@@ -322,8 +370,10 @@ def run_experiment(
         "training_seconds": training_seconds,
         "target_transform": {
             "residual_scale_db": transform.residual_scale_db,
+            "name": target_transform_name,
         },
         "mean_field_baseline_test": baseline_test,
+        "terrain_mean_baseline_test": terrain_baseline_test,
         "baseline_improvement_rmse_db": baseline_test["rmse_db"] - test_metric["rmse_db"],
         "baseline_rmse_reduction_percent": 100.0
         * (baseline_test["rmse_db"] - test_metric["rmse_db"])
@@ -344,6 +394,7 @@ def run_experiment(
         "depths_m": depths,
         "ssp_depths_m": ssp_depths,
         "bathymetry_depths_m": bathymetry,
+        "bathymetry_profiles": terrain_groups,
         "experiment_id": experiment["id"],
     }
     torch.save(checkpoint, run_dir / "model.pt")
@@ -358,6 +409,7 @@ def run_experiment(
         depths_m=depths,
         ssp_speeds_mps=ssp_profiles,
         ssp_depths_m=ssp_depths,
+        bathymetry_profiles=terrain_groups,
         **({"bathymetry_depths_m": bathymetry} if bathymetry is not None else {}),
     )
     (run_dir / "history.json").write_text(json.dumps(history, indent=2) + "\n")

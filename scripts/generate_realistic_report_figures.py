@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from itertools import pairwise
 from pathlib import Path
 
 import matplotlib
@@ -11,6 +12,7 @@ import numpy as np
 
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 from ocean_acoustic_surrogate.config import MVPConfig
 
@@ -59,6 +61,68 @@ def _load() -> tuple[MVPConfig, dict[str, np.ndarray], dict, dict, list[dict]]:
         history = json.loads((run_dir / "history.json").read_text())
         runs.append({"record": record, "metrics": metrics, "history": history, "path": run_dir})
     return config, dataset, pilot, campaign, runs
+
+
+def _box(axis: plt.Axes, x: float, y: float, width: float, height: float, title: str, body: str,
+         color: str) -> None:
+    axis.add_patch(
+        FancyBboxPatch(
+            (x, y),
+            width,
+            height,
+            boxstyle="round,pad=0.012,rounding_size=0.012",
+            facecolor=color,
+            edgecolor=NAVY,
+            linewidth=1.2,
+        )
+    )
+    axis.text(x + width / 2, y + height * 0.67, title, ha="center", va="center",
+              fontsize=11, fontweight="bold", color=NAVY)
+    axis.text(x + width / 2, y + height * 0.33, body, ha="center", va="center", fontsize=8.5)
+
+
+def _arrow(axis: plt.Axes, start: tuple[float, float], end: tuple[float, float]) -> None:
+    axis.add_patch(
+        FancyArrowPatch(start, end, arrowstyle="-|>", mutation_scale=14, color=BLUE, linewidth=1.5)
+    )
+
+
+def plot_pipeline() -> None:
+    fig, axis = plt.subplots(figsize=(14.0, 3.2), constrained_layout=True)
+    axis.set_xlim(0, 1)
+    axis.set_ylim(0, 1)
+    axis.axis("off")
+    boxes = [
+        (0.02, "Public data", "GEBCO 2026\nWOA23 + TEOS-10", "#e8f1f8"),
+        (0.22, "Controlled domain", "24-azimuth screen\n4 terrain × narrow SSP", "#edf6f4"),
+        (0.42, "Reference labels", "Bellhop incoherent TL\n25,600 rays / field", "#fff3e6"),
+        (0.62, "Residual operator", "Terrain anchor\n+ anisotropic FNO", "#eaf3eb"),
+        (0.82, "Sealed evaluation", "RMSE / MAE\nP95 latency", "#f1edf8"),
+    ]
+    for x, title, body, color in boxes:
+        _box(axis, x, 0.25, 0.16, 0.5, title, body, color)
+    for left, right in pairwise(boxes):
+        _arrow(axis, (left[0] + 0.16, 0.5), (right[0], 0.5))
+    _save(fig, "fig01_project_pipeline")
+
+
+def plot_method() -> None:
+    fig, axis = plt.subplots(figsize=(13.0, 4.5), constrained_layout=True)
+    axis.set_xlim(0, 1)
+    axis.set_ylim(0, 1)
+    axis.axis("off")
+    _box(axis, 0.03, 0.58, 0.16, 0.26, "SSP channel", "$[c(z)-1500]/50$\nreplicated over range", "#e8f1f8")
+    _box(axis, 0.03, 0.16, 0.16, 0.26, "Terrain channel", "$b(r)/2000$\nreplicated over depth", "#edf6f4")
+    _box(axis, 0.27, 0.37, 0.18, 0.28, "Anisotropic FNO", "spectral + local paths\npadding + residual blocks", "#fff3e6")
+    _box(axis, 0.53, 0.58, 0.18, 0.26, "Learned residual", "$s_g F_\\theta(c,b,z,r)$\nzero-initialized head", "#eaf3eb")
+    _box(axis, 0.53, 0.16, 0.18, 0.26, "Terrain anchor", "$\\bar{y}_g(z,r)$\ntraining fields only", "#f1edf8")
+    _box(axis, 0.80, 0.37, 0.16, 0.28, "Predicted TL", "$\\hat y=\\bar y_g+s_gF_\\theta$\n96 × 256 grid", "#e8f1f8")
+    _arrow(axis, (0.19, 0.71), (0.27, 0.56))
+    _arrow(axis, (0.19, 0.29), (0.27, 0.44))
+    _arrow(axis, (0.45, 0.51), (0.53, 0.71))
+    _arrow(axis, (0.71, 0.71), (0.80, 0.56))
+    _arrow(axis, (0.71, 0.29), (0.80, 0.44))
+    _save(fig, "fig04_model_architecture")
 
 
 def plot_environment(config: MVPConfig, data: dict[str, np.ndarray]) -> None:
@@ -320,8 +384,10 @@ def plot_latency(runs: list[dict], pilot: dict) -> None:
 
 def main() -> None:
     config, data, pilot, campaign, runs = _load()
+    plot_pipeline()
     plot_environment(config, data)
     plot_label_quality(pilot)
+    plot_method()
     plot_main_results(runs)
     plot_data_ablation(runs)
     plot_training(runs)

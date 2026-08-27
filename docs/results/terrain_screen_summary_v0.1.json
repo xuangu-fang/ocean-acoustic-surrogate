@@ -1,0 +1,37 @@
+{
+  "screen_id": "bashi_gebco_24az_screen_v0.1",
+  "purpose": "select a small terrain family with large training-mean-field separation before formal dataset generation",
+  "source": {
+    "product": "GEBCO_2026",
+    "region": "bashi_candidate_v0.1",
+    "center_latitude": 20.5,
+    "center_longitude": 121.5,
+    "bbox": {
+      "west": 120.349,
+      "east": 122.651,
+      "south": 19.422,
+      "north": 21.578
+    },
+    "sha256": "1e4a2ed7c6742499d378f5f90c99b6cb3ce066d6ab034593473afbddb24ad2eb"
+  },
+  "screening": {
+    "candidate_count": 24,
+    "azimuth_spacing_deg": 15,
+    "range_end_m": 50000,
+    "raw_spacing_m": 1000,
+    "smoothing_window_m": 9000,
+    "normalized_depth_envelope_m": [2000, 4800],
+    "reduced_spacing_m": 5000,
+    "extrema_preserved": true,
+    "frequency_hz": 1000,
+    "source_depth_m": 50,
+    "screen_num_rays": 3200,
+    "ssp": "WOA23 June nominal profile",
+    "selection_criterion": "maximum four-profile mean-field RMSE",
+    "formal_training_or_test_labels_used": false
+  },
+  "result": {
+    "selected_azimuths_deg": [30, 90, 210, 225],
+    "screen_mean_field_rmse_db": 5.631479263305664
+  }
+}

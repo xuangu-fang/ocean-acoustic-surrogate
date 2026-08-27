@@ -1,0 +1,67 @@
+contract:
+  dataset_id: bashi_gebco_diverse_smooth_woa23_june_v0.3
+  seed: 20260828
+  frequency_hz: 1000.0
+  source_depth_m: 50.0
+  water_depth_m: 2000.0
+  range_start_m: 100.0
+  range_end_m: 50000.0
+  range_steps: 256
+  depth_start_m: 10.0
+  depth_end_m: 1990.0
+  depth_steps: 96
+  field_mode: incoherent
+  reference_num_rays: 25600
+  pilot_ray_counts: [3200, 6400, 12800, 25600]
+  invalid_tl_fill_db: 120.0
+  seabed:
+    kind: fluid
+    speed_mps: 1700.0
+    density_kgm3: 2000.0
+    attenuation_dbperlambda: 0.8
+  bathymetry:
+    name: bashi_gebco2026_four_profile_low_dimensional_family
+    profiles:
+      - name: gebco_az000_relief600
+        source: GEBCO_2026_Bashi_center_20.5N_121.5E_azimuth_000deg
+        processing: 9km_moving_average_then_affine_relief_compression_then_10km_resampling
+        ranges_m: &terrain_ranges [0, 10000, 20000, 30000, 40000, 50000]
+        depths_m: [2600.0, 2246.5, 2049.1, 2378.4, 2278.8, 2264.6]
+      - name: gebco_az144_relief700
+        source: GEBCO_2026_Bashi_center_20.5N_121.5E_azimuth_144deg
+        processing: 9km_moving_average_then_affine_relief_compression_then_10km_resampling
+        ranges_m: *terrain_ranges
+        depths_m: [2700.0, 2363.6, 2381.3, 2196.2, 2115.7, 2008.8]
+      - name: gebco_az216_relief450
+        source: GEBCO_2026_Bashi_center_20.5N_121.5E_azimuth_216deg
+        processing: 9km_moving_average_then_affine_relief_compression_then_10km_resampling
+        ranges_m: *terrain_ranges
+        depths_m: [2000.0, 2346.3, 2449.6, 2410.6, 2431.2, 2380.4]
+      - name: gebco_az288_relief650
+        source: GEBCO_2026_Bashi_center_20.5N_121.5E_azimuth_288deg
+        processing: 9km_moving_average_then_affine_relief_compression_then_10km_resampling
+        ranges_m: *terrain_ranges
+        depths_m: [2484.7, 2593.4, 2641.4, 2643.6, 2391.8, 2000.0]
+
+ssp_family:
+  name: bashi_woa23_june_narrow
+  depths_m: [0, 50, 100, 200, 400, 700, 1000, 1300, 1600, 1800, 2000]
+  base_speeds_mps: [1542.6766, 1539.5985, 1534.5546, 1522.6379, 1501.9202, 1486.3556, 1484.3221, 1483.8345, 1486.6744, 1489.2257, 1489.8210]
+  global_offset_mps: [-0.4, 0.4]
+  thermocline_amplitude_mps: [-0.6, 0.6]
+  channel_axis_shift_m: [-25.0, 25.0]
+  deep_gradient_mps: [-0.4, 0.4]
+  interpolation_points: 41
+
+split:
+  train_fraction: 0.75
+  validation_fraction: 0.125
+  test_fraction: 0.125
+
+acceptance:
+  maximum_test_rmse_db: 2.0
+  maximum_test_mae_db: 2.0
+  maximum_p95_latency_ms: 100.0
+
+storage:
+  default_root: /mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate

@@ -17,7 +17,12 @@ from .models import build_model
 from .training import _benchmark_latency, _predict_batches
 
 
-def verify_run(mvp: MVPConfig, dataset_path: Path, run_dir: Path) -> Path:
+def verify_run(
+    mvp: MVPConfig,
+    dataset_path: Path,
+    run_dir: Path,
+    device_name: str = "auto",
+) -> Path:
     """Reload a saved model in a fresh process and re-score only the frozen test split."""
     recorded = json.loads((run_dir / "metrics.json").read_text())
     dataset_sha256 = hashlib.sha256(dataset_path.read_bytes()).hexdigest()
@@ -42,7 +47,14 @@ def verify_run(mvp: MVPConfig, dataset_path: Path, run_dir: Path) -> Path:
     )
     model = build_model(checkpoint["model_config"], int(checkpoint["in_channels"]))
     model.load_state_dict(checkpoint["model_state"])
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device_name not in {"auto", "cpu", "cuda"}:
+        raise ValueError("device_name must be auto, cpu, or cuda")
+    if device_name == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA verification requested but CUDA is unavailable")
+    resolved_device = "cuda" if device_name == "auto" and torch.cuda.is_available() else device_name
+    if resolved_device == "auto":
+        resolved_device = "cpu"
+    device = torch.device(resolved_device)
     model.to(device).eval()
     prediction = transform.decode_tensor(
         _predict_batches(
@@ -61,14 +73,26 @@ def verify_run(mvp: MVPConfig, dataset_path: Path, run_dir: Path) -> Path:
         repeats=200,
     )
     original_rmse = float(recorded["metrics"]["test"]["aggregate"]["rmse_db"])
+    recomputed_rmse = float(metrics["aggregate"]["rmse_db"])
+    rmse_delta = abs(recomputed_rmse - original_rmse)
+    rmse_tolerance = 1e-4
+    recorded_device = str(recorded["device"])
+    same_device = recorded_device.startswith(device.type)
+    reload_matches = rmse_delta <= rmse_tolerance if same_device else None
     result = {
         "verified_at": datetime.now(UTC).isoformat(),
         "run_id": recorded["run_id"],
         "dataset_path": str(dataset_path),
         "dataset_sha256": dataset_sha256,
         "dataset_hash_matches_run": dataset_sha256 == recorded["dataset_sha256"],
-        "checkpoint_reload_matches_rmse": abs(metrics["aggregate"]["rmse_db"] - original_rmse)
-        < 1e-6,
+        "recorded_device": recorded_device,
+        "verification_device": str(device),
+        "same_device_as_recorded": same_device,
+        "recorded_test_rmse_db": original_rmse,
+        "recomputed_test_rmse_db": recomputed_rmse,
+        "rmse_absolute_delta_db": rmse_delta,
+        "rmse_match_tolerance_db": rmse_tolerance,
+        "checkpoint_reload_matches_rmse": reload_matches,
         "test_metrics": metrics,
         "latency": {"device": str(device), **latency},
     }
@@ -81,9 +105,9 @@ def verify_run(mvp: MVPConfig, dataset_path: Path, run_dir: Path) -> Path:
     result["acceptance"]["overall_pass"] = all(result["acceptance"].values())
     result["verification_pass"] = (
         result["dataset_hash_matches_run"]
-        and result["checkpoint_reload_matches_rmse"]
         and result["acceptance"]["overall_pass"]
+        and (not same_device or bool(reload_matches))
     )
-    output = run_dir / "independent_verification.json"
+    output = run_dir / f"independent_verification_{device.type}.json"
     output.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
     return output

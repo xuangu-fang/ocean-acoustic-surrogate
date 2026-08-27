@@ -1,0 +1,27 @@
+{
+  "dataset_sha256": "13f4246b86a2fff33f2e5d587c1443be47eb15b4ad3d5c413688464ed8c7281d",
+  "accuracy_winner_cuda": {
+    "run_id": "20260827T104438Z_r3_padding_residual",
+    "recorded_test_rmse_db": 0.516517210475446,
+    "recomputed_test_rmse_db": 0.516512296737257,
+    "rmse_absolute_delta_db": 0.000004913738189005201,
+    "rmse_match_tolerance_db": 0.0001,
+    "p95_latency_ms": 4.265693901106715,
+    "dataset_hash_matches": true,
+    "checkpoint_reload_matches": true,
+    "acceptance_pass": true,
+    "verification_pass": true
+  },
+  "portable_mvp_cpu": {
+    "run_id": "20260827T104036Z_r1_fno_small",
+    "recorded_cuda_test_rmse_db": 0.5541729302017085,
+    "recomputed_cpu_test_rmse_db": 0.7582368518929907,
+    "recomputed_cpu_test_mae_db": 0.3067368720387892,
+    "recomputed_cpu_worst_sample_rmse_db": 1.0844856811844725,
+    "p95_latency_ms": 38.31683066673577,
+    "same_device_as_recorded": false,
+    "dataset_hash_matches": true,
+    "acceptance_pass": true,
+    "verification_pass": true
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "dataset": {
+    "id": "scs_june_narrow_v0.1",
+    "path": "/home/ubuntu/ocean-acoustic-surrogate-artifacts/datasets/scs_june_narrow_v0.1/n512/dataset.npz",
+    "sha256": "13f4246b86a2fff33f2e5d587c1443be47eb15b4ad3d5c413688464ed8c7281d",
+    "size_bytes": 41170478,
+    "config_hash": "17fb02396484d73ba89af7de2b884ec2c28aca0333e0e77cd2a7353edb9f99f3",
+    "n_samples": 512
+  },
+  "models": [
+    {
+      "role": "portable_mvp",
+      "experiment_id": "r1_fno_small",
+      "run_id": "20260827T104036Z_r1_fno_small",
+      "path": "/home/ubuntu/ocean-acoustic-surrogate-artifacts/runs/20260827T104036Z_r1_fno_small/model.pt",
+      "sha256": "fca7a048d3611c8587d7d8395ef38332312ee1c489d101052603e640fefa5208",
+      "size_bytes": 10798657,
+      "parameter_count": 1333121
+    },
+    {
+      "role": "accuracy_winner_cuda",
+      "experiment_id": "r3_padding_residual",
+      "run_id": "20260827T104438Z_r3_padding_residual",
+      "path": "/home/ubuntu/ocean-acoustic-surrogate-artifacts/runs/20260827T104438Z_r3_padding_residual/model.pt",
+      "sha256": "83c8b233a8d272d4aed1a50267b71b00afee2e6497a8988e6f65b2f4e9449048",
+      "size_bytes": 50524801,
+      "parameter_count": 6300417
+    }
+  ],
+  "source_versions": {
+    "ocean_acoustic_surrogate_dataset_generation": "f488acc13e2b2a01e6c41d99816571b648f38e66",
+    "ocean_acoustic_agent_manifest_head": "f07e8ea9a4fcb7bc66b4f36050b60d41d0fd959f",
+    "ocean_acoustic_agent_field_mode_change": "f4b11ba"
+  }
+}

@@ -27,6 +27,7 @@ def _parser() -> argparse.ArgumentParser:
     verify.add_argument("config", type=Path)
     verify.add_argument("run_dir", type=Path)
     verify.add_argument("--samples", type=int, default=512)
+    verify.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     profile = subparsers.add_parser("profile", help="summarize a packaged dataset")
     profile.add_argument("config", type=Path)
     profile.add_argument("--samples", type=int, default=512)
@@ -50,7 +51,7 @@ def main() -> None:
         from .verification import verify_run
 
         dataset_path = config.dataset_root / f"n{args.samples}" / "dataset.npz"
-        print(verify_run(config, dataset_path, args.run_dir))
+        print(verify_run(config, dataset_path, args.run_dir, args.device))
         return
     if args.command == "profile":
         from .reporting import commit_dataset_profile

@@ -31,6 +31,16 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
         depths = raw["depths_m"].astype(np.float32)
         ranges = raw["ranges_m"].astype(np.float32)
         splits = raw["splits"].astype(str)
+        bathymetry = (
+            raw["bathymetry_depths_m"].astype(np.float32)
+            if "bathymetry_depths_m" in raw
+            else None
+        )
+        terrain_groups = (
+            raw["bathymetry_profiles"].astype(str)
+            if "bathymetry_profiles" in raw
+            else np.full(len(tl), "flat")
+        )
     train = np.flatnonzero(splits == "train")
     test = np.flatnonzero(splits == "test")
     counts = valid[train].sum(axis=0)
@@ -41,6 +51,18 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
         where=counts > 0,
     )
     baseline = np.broadcast_to(mean_field, tl[test].shape)
+    terrain_baseline = np.empty_like(tl[test])
+    for group in np.unique(terrain_groups):
+        group_train = train[terrain_groups[train] == group]
+        group_test = np.flatnonzero(terrain_groups[test] == group)
+        group_count = valid[group_train].sum(axis=0)
+        group_mean = np.divide(
+            np.where(valid[group_train], tl[group_train], 0.0).sum(axis=0),
+            group_count,
+            out=np.zeros_like(tl[0]),
+            where=group_count > 0,
+        )
+        terrain_baseline[group_test] = group_mean
     parameter_names = [
         "global_offset_mps",
         "thermocline_amplitude_mps",
@@ -70,17 +92,41 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
         "training_mean_field_baseline_test": split_metrics(
             tl[test], baseline, valid[test]
         )["aggregate"],
+        "training_terrain_mean_field_baseline_test": split_metrics(
+            tl[test], terrain_baseline, valid[test]
+        )["aggregate"],
+        "terrain_profile_counts": {
+            group: {
+                split: int(np.sum((terrain_groups == group) & (splits == split)))
+                for split in ("train", "validation", "test")
+            }
+            for group in np.unique(terrain_groups)
+        },
     }
     output = project_root() / "docs/results/dataset_summary.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5), constrained_layout=True)
+    columns = 4 if bathymetry is not None else 3
+    fig, axes = plt.subplots(1, columns, figsize=(5 * columns, 4.5), constrained_layout=True)
     for profile in profiles[:: max(1, len(profiles) // 80)]:
         axes[0].plot(profile, ssp_depths, color="#7fa6c9", alpha=0.18)
     axes[0].plot(profiles.mean(axis=0), ssp_depths, color="#153f66", linewidth=2)
     axes[0].invert_yaxis()
     axes[0].set(xlabel="Sound speed (m/s)", ylabel="Depth (m)", title="Frozen SSP family")
+    field_offset = 1
+    if bathymetry is not None:
+        for group in np.unique(terrain_groups):
+            index = np.flatnonzero(terrain_groups == group)[0]
+            axes[1].plot(ranges / 1000.0, bathymetry[index], label=group.replace("gebco_", ""))
+        axes[1].invert_yaxis()
+        axes[1].set(
+            xlabel="Range (km)",
+            ylabel="Bottom depth (m)",
+            title="Screened GEBCO terrain family",
+        )
+        axes[1].legend(fontsize=7)
+        field_offset = 2
     extent = [ranges[0] / 1000, ranges[-1] / 1000, depths[-1], depths[0]]
     total_valid = valid.sum(axis=0)
     total = np.where(valid, tl, 0.0).sum(axis=0)
@@ -97,12 +143,16 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
         where=total_valid > 0,
     )
     std = np.sqrt(np.maximum(second_moment - mean**2, 0.0))
-    image = axes[1].imshow(mean, aspect="auto", extent=extent, cmap="viridis")
-    axes[1].set(xlabel="Range (km)", ylabel="Depth (m)", title="Mean Bellhop TL")
-    fig.colorbar(image, ax=axes[1], label="dB")
-    image = axes[2].imshow(std, aspect="auto", extent=extent, cmap="magma")
-    axes[2].set(xlabel="Range (km)", ylabel="Depth (m)", title="Across-SSP TL standard deviation")
-    fig.colorbar(image, ax=axes[2], label="dB")
+    image = axes[field_offset].imshow(mean, aspect="auto", extent=extent, cmap="viridis")
+    axes[field_offset].set(
+        xlabel="Range (km)", ylabel="Depth (m)", title="Mean Bellhop TL"
+    )
+    fig.colorbar(image, ax=axes[field_offset], label="dB")
+    image = axes[field_offset + 1].imshow(std, aspect="auto", extent=extent, cmap="magma")
+    axes[field_offset + 1].set(
+        xlabel="Range (km)", ylabel="Depth (m)", title="Across-environment TL standard deviation"
+    )
+    fig.colorbar(image, ax=axes[field_offset + 1], label="dB")
     asset = project_root() / "docs/assets/dataset_profile.png"
     asset.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(asset, dpi=170)

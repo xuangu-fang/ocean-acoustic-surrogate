@@ -1,0 +1,28 @@
+{
+  "dataset_id": "scs_june_narrow_v0.1",
+  "field_mode": "incoherent",
+  "n_samples": 8,
+  "ray_ladder": [3200, 6400, 12800, 25600],
+  "comparisons": [
+    {
+      "lower_rays": 3200,
+      "upper_rays": 6400,
+      "mean_rmse_db": 0.1039262735,
+      "worst_rmse_db": 0.1484057947
+    },
+    {
+      "lower_rays": 6400,
+      "upper_rays": 12800,
+      "mean_rmse_db": 0.0656015007,
+      "worst_rmse_db": 0.1239176739
+    },
+    {
+      "lower_rays": 12800,
+      "upper_rays": 25600,
+      "mean_rmse_db": 0.0520466073,
+      "worst_rmse_db": 0.1409614537
+    }
+  ],
+  "reference_num_rays": 25600,
+  "failures": 0
+}

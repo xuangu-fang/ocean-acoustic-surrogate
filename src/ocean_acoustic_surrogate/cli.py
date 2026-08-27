@@ -7,9 +7,6 @@ import json
 from pathlib import Path
 
 from .config import MVPConfig, load_campaign
-from .dataset import generate_dataset, run_pilot
-from .reporting import commit_lightweight_results, write_campaign_summary
-from .training import run_experiment
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -33,15 +30,24 @@ def main() -> None:
     args = _parser().parse_args()
     config = MVPConfig.from_yaml(args.config)
     if args.command == "pilot":
+        from .dataset import run_pilot
+
         print(run_pilot(config, args.samples))
         return
     if args.command == "generate":
+        from .dataset import generate_dataset
+
         print(generate_dataset(config, args.samples))
         return
     campaign = load_campaign(args.campaign)
     dataset_path = config.dataset_root / f"n{args.samples}" / "dataset.npz"
     if not dataset_path.exists():
+        from .dataset import generate_dataset
+
         dataset_path = generate_dataset(config, args.samples)
+    from .reporting import commit_lightweight_results, write_campaign_summary
+    from .training import run_experiment
+
     experiments = campaign["experiments"]
     if args.only:
         selected = set(args.only)

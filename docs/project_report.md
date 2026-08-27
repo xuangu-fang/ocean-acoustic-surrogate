@@ -39,7 +39,13 @@
 
 ### 3.1 标签收敛审计
 
-实验结果待写入。
+在 8 个独立 SSP 上分别运行 3200、6400、12800 和 25600 rays。相邻层级的平均
+RMSE 分别为 0.104、0.066 和 0.052 dB；12800 与 25600 rays 的最差逐场 RMSE 为
+0.141 dB，8 个样本无失败。该误差比最终 2 dB 门槛低一个数量级以上，因此正式标签
+固定为 25600 rays。热态单场中位生成时间约 9.46 s。
+
+本结果也说明，学生使用的非相干 TL 远比此前项目中的半相干场对射线数量稳定；因此
+本项目不混用两类 TL，也不把半相干实验的收敛结论外推到当前标签。
 
 ### 3.2 正式数据集
 
@@ -81,4 +87,3 @@ uv run ocean-acoustic-surrogate pilot configs/mvp.yaml --samples 8
 uv run ocean-acoustic-surrogate generate configs/mvp.yaml --samples 512
 uv run ocean-acoustic-surrogate campaign configs/mvp.yaml configs/campaign.yaml --samples 512
 ```
-

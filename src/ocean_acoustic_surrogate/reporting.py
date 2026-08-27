@@ -82,9 +82,21 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
     axes[0].invert_yaxis()
     axes[0].set(xlabel="Sound speed (m/s)", ylabel="Depth (m)", title="Frozen SSP family")
     extent = [ranges[0] / 1000, ranges[-1] / 1000, depths[-1], depths[0]]
-    valid_tl = np.where(valid, tl, np.nan)
-    mean = np.nanmean(valid_tl, axis=0)
-    std = np.nanstd(valid_tl, axis=0)
+    total_valid = valid.sum(axis=0)
+    total = np.where(valid, tl, 0.0).sum(axis=0)
+    mean = np.divide(
+        total,
+        total_valid,
+        out=np.full_like(total, np.nan),
+        where=total_valid > 0,
+    )
+    second_moment = np.divide(
+        np.where(valid, tl**2, 0.0).sum(axis=0),
+        total_valid,
+        out=np.full_like(total, np.nan),
+        where=total_valid > 0,
+    )
+    std = np.sqrt(np.maximum(second_moment - mean**2, 0.0))
     image = axes[1].imshow(mean, aspect="auto", extent=extent, cmap="viridis")
     axes[1].set(xlabel="Range (km)", ylabel="Depth (m)", title="Mean Bellhop TL")
     fig.colorbar(image, ax=axes[1], label="dB")

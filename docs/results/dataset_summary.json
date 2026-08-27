@@ -1,0 +1,58 @@
+{
+  "dataset_id": "scs_june_narrow_v0.1",
+  "dataset_path": "/home/ubuntu/ocean-acoustic-surrogate-artifacts/datasets/scs_june_narrow_v0.1/n512/dataset.npz",
+  "dataset_sha256": "13f4246b86a2fff33f2e5d587c1443be47eb15b4ad3d5c413688464ed8c7281d",
+  "n_samples": 512,
+  "split_counts": {
+    "train": 384,
+    "validation": 64,
+    "test": 64
+  },
+  "field_shape": [
+    96,
+    256
+  ],
+  "finite_coverage": 0.9968766371409097,
+  "bellhop_wall_seconds": {
+    "total": 4724.249696227722,
+    "median": 9.137509679887444,
+    "p95": 9.492428508633747
+  },
+  "dataset_size_bytes": 41170478,
+  "parameter_ranges": {
+    "global_offset_mps": {
+      "minimum": -1.4943968057632446,
+      "maximum": 1.4953219890594482
+    },
+    "thermocline_amplitude_mps": {
+      "minimum": -1.997984766960144,
+      "maximum": 1.9951732158660889
+    },
+    "axis_shift_m": {
+      "minimum": -99.82151794433594,
+      "maximum": 99.82167053222656
+    },
+    "deep_gradient_mps": {
+      "minimum": -1.4965192079544067,
+      "maximum": 1.4945037364959717
+    }
+  },
+  "tl_db": {
+    "minimum": 37.96933364868164,
+    "maximum": 94.13744354248047,
+    "mean": 81.3347396850586,
+    "standard_deviation": 8.252556800842285
+  },
+  "training_mean_field_baseline_test": {
+    "rmse_db": 1.4211160363928836,
+    "mae_db": 0.8045558317892757,
+    "bias_db": -0.029763961718410996,
+    "p95_absolute_error_db": 2.9063186645507812,
+    "maximum_absolute_error_db": 25.75922393798828,
+    "cell_count": 1567951,
+    "macro_mean_rmse_db": 1.3752844132614719,
+    "median_sample_rmse_db": 1.5934253703071577,
+    "p90_sample_rmse_db": 1.7747544020744084,
+    "worst_sample_rmse_db": 1.9100693348756337
+  }
+}

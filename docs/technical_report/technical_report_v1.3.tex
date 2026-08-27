@@ -1,0 +1,717 @@
+\documentclass[UTF8,11pt]{ctexart}
+
+\usepackage[a4paper,top=2.25cm,bottom=2.2cm,left=2.4cm,right=2.4cm,headheight=15pt]{geometry}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{TeX Gyre Heros}
+\setmonofont{DejaVu Sans Mono}[Scale=0.84]
+\setCJKmainfont{Noto Serif CJK SC}
+\setCJKsansfont{Noto Sans CJK SC}
+\setCJKmonofont{Noto Sans Mono CJK SC}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{graphicx}
+\usepackage{booktabs,tabularx,array,longtable}
+\usepackage{siunitx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{xurl}
+\usepackage{hyperref}
+\usepackage{lastpage}
+
+\definecolor{Navy}{HTML}{153F66}
+\definecolor{Blue}{HTML}{2F6F9F}
+\definecolor{Teal}{HTML}{2A8C82}
+\definecolor{Green}{HTML}{4D8F62}
+\definecolor{Orange}{HTML}{D9822B}
+\definecolor{LightBlue}{HTML}{EEF5FA}
+\definecolor{LightGray}{HTML}{F4F6F8}
+\definecolor{Dark}{HTML}{25313B}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=Navy,
+  urlcolor=Blue,
+  citecolor=Teal,
+  pdftitle={真实数据锚定的深海声传播损失快速计算技术报告},
+  pdfauthor={Ocean Acoustic Surrogate Project},
+  pdfsubject={GEBCO、WOA23、Bellhop 与改进型 Fourier Neural Operator}
+}
+
+\graphicspath{{assets/}{../assets/}}
+\captionsetup{font=small,labelfont={bf,color=Navy}}
+\setlist{leftmargin=2em,itemsep=0.2em,topsep=0.3em}
+\renewcommand{\arraystretch}{1.22}
+\setlength{\tabcolsep}{5pt}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+\titleformat{\section}{\LARGE\bfseries\sffamily\color{Navy}}{\thesection}{0.7em}{}
+  [\vspace{0.2em}\color{Blue}\titlerule]
+\titleformat{\subsection}{\Large\bfseries\sffamily\color{Navy}}{\thesubsection}{0.7em}{}
+\titleformat{\subsubsection}{\large\bfseries\sffamily\color{Blue}}{\thesubsubsection}{0.6em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\sffamily\color{Navy}深海声传播损失快速计算}
+\fancyhead[R]{\small\sffamily\color{Navy}项目技术报告 V1.3}
+\fancyfoot[L]{\small\color{gray}Ocean Acoustic Surrogate Project}
+\fancyfoot[R]{\small\color{gray}\thepage\,/\,\pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.45pt}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newtcolorbox{summarybox}{enhanced,breakable,colback=LightBlue,colframe=Blue,
+  boxrule=0.7pt,arc=1mm,left=4mm,right=4mm,top=3mm,bottom=3mm}
+\lstdefinestyle{repro}{basicstyle=\ttfamily\footnotesize,backgroundcolor=\color{LightGray},
+  frame=single,rulecolor=\color{gray!35},breaklines=true,columns=fullflexible,
+  keepspaces=true,showstringspaces=false,xleftmargin=0.8em,framexleftmargin=0.6em}
+\newcommand{\figfull}[3]{\begin{figure}[H]\centering
+  \includegraphics[width=#1\textwidth]{#2}\caption{#3}\end{figure}}
+\newcommand{\TL}{\mathrm{TL}}
+\newcommand{\RMSE}{\mathrm{RMSE}}
+
+% Frozen-result macros; replaced from sealed artifacts before release.
+\newcommand{\DatasetHash}{\texttt{30f9864ef690c85d\ldots c530b76}}
+\newcommand{\BestModel}{Anchor FNO-L}
+\newcommand{\BestRMSE}{0.789}
+\newcommand{\BestMAE}{0.271}
+\newcommand{\BestPninety}{1.125}
+\newcommand{\BestWorst}{1.265}
+\newcommand{\GlobalBaseline}{5.587}
+\newcommand{\TerrainBaseline}{1.337}
+\newcommand{\RelativeReduction}{85.88}
+\newcommand{\GpuPninetyfive}{4.19}
+\newcommand{\CpuPninetyfive}{133.32}
+\newcommand{\BellhopMedian}{8.02}
+
+\begin{document}
+
+\begin{titlepage}
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[Navy] (current page.north west) rectangle ([yshift=-1.4cm]current page.north east);
+  \fill[Blue] ([yshift=-1.4cm]current page.north west) rectangle
+    ([yshift=-1.52cm]current page.north east);
+\end{tikzpicture}
+\vspace*{2.0cm}
+{\sffamily\color{Blue}\Large 项目技术报告}\par
+\vspace{0.75cm}
+{\sffamily\bfseries\color{Navy}\fontsize{26}{34}\selectfont
+真实环境数据锚定的\par
+深海声传播损失快速计算}\par
+\vspace{0.65cm}
+{\sffamily\color{Dark}\Large
+GEBCO 地形、WOA23 声速剖面与改进型 Fourier Neural Operator}\par
+
+\vspace{1.45cm}
+\begin{summarybox}
+\centering
+\begin{tabular}{L{3.4cm}L{8.0cm}}
+\textbf{核心任务} & 从声速剖面与距离相关地形直接预测二维传播损失场 \\
+\textbf{固定参数} & 1 kHz、50 km、50 m 声源深度、96$\times$256 输出网格 \\
+\textbf{环境数据} & GEBCO 2026 巴士海峡候选区；WOA23 6 月温盐经 TEOS-10 转声速 \\
+\textbf{参考标签} & Bellhop 非相干传播损失，25,600 条射线/场 \\
+\textbf{主要结果} & 测试 RMSE \BestRMSE{} dB；均值场 \GlobalBaseline{} dB；
+  A100 P95 \GpuPninetyfive{} ms \\
+\textbf{报告版本} & V1.3，2026-08-27 \\
+\end{tabular}
+\end{summarybox}
+\vfill
+{\sffamily\color{Navy}\Large Ocean Acoustic Surrogate Project}\par
+\vspace{0.3cm}
+{\color{Dark}面向固定典型深海任务域的高质量仿真与快速代理计算研究}\par
+\vspace{1.0cm}
+\end{titlepage}
+
+\pagenumbering{roman}
+\section*{摘\quad 要}
+\addcontentsline{toc}{section}{摘要}
+
+本项目面向频率 1 kHz、最大传播距离 50 km、声源深度 50 m 的典型深海声传播损失快速
+计算任务，研究从声速剖面与距离相关海底地形到二维非相干传播损失（Transmission Loss,
+TL）场的代理映射。项目的核心验收要求为：相对于 Bellhop 数值参考，独立测试集平均误差
+不超过 2 dB；单场模型计算时间不超过 100 ms。
+
+为兼顾真实环境依据与首阶段可控性，数据集采用“\textbf{地形具有代表性、SSP 保持窄域}”
+的单复杂度轴设计。海底形态取自 GEBCO 2026 巴士海峡候选区子集：从候选中心沿 24 个
+方位提取 50 km 剖面，经 9 km 平滑、深水包络归一化和低维重采样后，预先选取四条声场
+差异较大的代表剖面。声速基准来自同一区域 WOA23 0.25$^\circ$ 6 月温盐气候态，并通过
+TEOS-10 转换为声速；只叠加幅度受限的四参数平滑扰动。正式数据包含 128 个环境样本，
+按地形分层划分为 96/16/16 个训练、验证和独立测试样本。
+
+参考标签由 Bellhop 非相干场生成。8 场逐级射线数审计表明，12,800 到 25,600 射线的
+平均差为 0.230 dB、最差样本为 0.286 dB，因此正式数据固定使用 25,600 条射线。方法上，
+在各向异性 FNO 的基础上引入训练集地形锚点场、非周期复制填充、层间残差连接和零初始化
+残差头。模型不直接从零拟合完整 TL，而是学习给定地形相对于训练锚点场的 SSP 驱动残差。
+
+密封测试结果显示，最终模型 \BestModel{} 的 RMSE 为 \BestRMSE{} dB、MAE 为
+\BestMAE{} dB、P90 单样本 RMSE 为 \BestPninety{} dB，均满足 2 dB 指标。相比训练集全局
+均值场 \GlobalBaseline{} dB，RMSE 相对下降 \RelativeReduction{}\%。A100 GPU 上 batch=1
+完整推理 P95 为 \GpuPninetyfive{} ms，满足 100 ms 指标。本报告中的“参考场”均指公开
+环境数据驱动的 Bellhop 高质量仿真结果，不等同于海试真值。
+
+\vspace{0.5cm}
+\noindent\textbf{关键词：}水声传播；传播损失；Bellhop；GEBCO；WOA23；
+Fourier Neural Operator；代理模型
+
+\clearpage
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\section{任务理解与技术目标}
+
+\subsection{核心任务}
+
+给定一维声速剖面 $c(z)$、距离相关海底深度 $b(r)$ 以及固定的频率、声源和海底介质参数，
+项目需要构造代理算子
+\begin{equation}
+  \mathcal{G}_\theta:\big(c(z),b(r)\big)\longmapsto \TL(z,r),
+\end{equation}
+一次性输出完整的深度--距离二维 TL 场。与逐个接收点回归不同，神经算子直接学习函数到
+函数的映射，并在统一网格上同时恢复传播扩散、声道折射、海底反射和会聚区结构。
+
+\figfull{0.98}{fig01_project_pipeline.pdf}{项目技术路线：公开环境数据经可追溯处理形成受控任务域，
+Bellhop 提供高质量参考，改进型 FNO 完成毫秒级预测。}
+
+\subsection{固定场景与硬指标}
+
+\begin{table}[H]
+\centering
+\caption{核心场景、数据网格与验收指标}
+\label{tab:contract}
+\begin{tabularx}{\textwidth}{L{3.5cm}L{4.1cm}Y}
+\toprule
+项目 & 冻结设置 & 说明 \\
+\midrule
+声源频率 & 1000 Hz & 单频 \\
+声源深度 & 50 m & 每个样本固定 \\
+最大传播距离 & 50 km & 0.1--50 km，共 256 点 \\
+接收深度 & 10--1990 m & 共 96 点 \\
+海底介质 & 流体沙质半空间 & 1700 m/s，2000 kg/m$^3$，0.8 dB/$\lambda$ \\
+地形水深包络 & 2000--4800 m & 由 GEBCO 形态受控归一化 \\
+参考场 & Bellhop 非相干 TL & 25,600 rays/field \\
+精度门槛 & RMSE、MAE 均不超过 2 dB & 样本级密封测试 \\
+时延门槛 & P95 不超过 100 ms & batch=1，含输入拷贝和反归一化 \\
+任务难度门槛 & 全局均值场 RMSE 大于 4 dB & 防止简单数据造成无意义达标 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+本阶段不追求跨海区、跨频率或任意底质的通用模型，而是在满足固定参数的前提下，先验证
+真实数据锚定环境中的准确率和时延闭环。测试样本与训练样本共享四类地形定义，但 SSP
+参数独立抽样；因此结果衡量的是受控任务域内的插值能力，而非未见地形类别的外推能力。
+
+\section{环境数据与参考数据集}
+
+\subsection{数据来源与可追溯性}
+
+\begin{table}[H]
+\centering
+\caption{环境数据来源及其在本项目中的用途}
+\begin{tabularx}{\textwidth}{L{3.1cm}L{4.2cm}Y}
+\toprule
+数据 & 冻结来源 & 处理与用途 \\
+\midrule
+海底地形 & GEBCO 2026 巴士海峡候选框，中心 20.5$^\circ$N、121.5$^\circ$E &
+沿方位提取 50 km 地形剖面，构造 Bellhop 距离相关边界和模型地形通道 \\
+温度、盐度 & WOA23 decadal 0.25$^\circ$ 月度气候态，6 月 &
+取候选中心附近网格；1500 m 以下使用年度气候态补齐 \\
+声速 & WOA 温盐经 TEOS-10/GSW 转换 &
+形成 0--2000 m 六月型深海 SSP 基准 \\
+参考声场 & Bellhop &
+在冻结频率、源深、底质和网格上生成非相干 TL \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+GEBCO 区域原始文件 SHA-256 为
+\path{1e4a2ed7c6742499d378f5f90c99b6cb3ce066d6ab034593473afbddb24ad2eb}。
+WOA23 处理文件包含 12 个月温盐和转换声速；本数据集只采用 6 月剖面，从而将主要变化
+集中在地形一条轴上。该策略保留了真实来源和真实形态，同时避免在首阶段同时叠加多月份、
+多海区和高维地形造成不必要的学习难度。
+
+\subsection{GEBCO 地形剖面的受控构造}
+
+地形准备不是随机生成四条曲线，而是执行下列固定流程：
+\begin{enumerate}
+  \item 在候选中心沿 $0^\circ,15^\circ,\ldots,345^\circ$ 共 24 个方位，以 1 km 间隔
+  提取 50 km GEBCO 水深序列；
+  \item 使用 9 km 移动平均抑制单格噪声和过窄地形起伏；
+  \item 保留每条剖面的相对形态，将水深仿射映射到 2000--4800 m 的任务深水包络；
+  \item 以约 5 km 间隔降维，同时显式保留局部最浅点和最深点；
+  \item 在名义 6 月 SSP 和 3200 射线预筛条件下，计算候选四剖面组合的均值场 RMSE，
+  在正式样本生成前选定 $30^\circ,90^\circ,210^\circ,225^\circ$ 四个方位。
+\end{enumerate}
+
+预筛只使用一个名义 SSP 和低成本标签，不使用正式训练、验证或测试样本。24 方位中选定
+四剖面的预筛均值场 RMSE 为 5.631 dB；其目的在于构造既小、又具有明确区分度的受控
+任务域，而不是扩大数据覆盖范围。
+
+\figfull{0.96}{fig02_real_environment.pdf}{WOA23 6 月窄域 SSP 族与四条经筛选、平滑和低维化的
+GEBCO 地形剖面。地形轴提供主要任务差异，SSP 只做窄幅变化。}
+
+\subsection{WOA23 声速剖面与窄幅参数化}
+
+WOA23 温盐转换使用 TEOS-10：由深度和纬度得到压力 $p$，将实用盐度 $S_P$ 和原位温度
+$t$ 转换为绝对盐度 $S_A$、保守温度 $\Theta$，再计算
+\begin{equation}
+  c(z)=c_{\mathrm{TEOS10}}\big(S_A(z),\Theta(z),p(z)\big).
+\end{equation}
+6 月基准剖面在表层约为 1542.68 m/s，约 1000--1300 m 形成声速低值区，深层缓慢回升。
+
+为构造同一月份内的小幅环境变化，每个样本采用四个可解释参数：全局偏移
+$\delta_c\in[-0.4,0.4]$ m/s、温跃层幅度 $a_t\in[-0.6,0.6]$ m/s、声道轴平移
+$\delta_z\in[-25,25]$ m 和深层梯度 $a_d\in[-0.4,0.4]$ m/s。连续 SSP 写为
+\begin{equation}
+ c_i(z)=c_0(\operatorname{clip}(z-\delta_{z,i}))+delta_{c,i}
+ +a_{t,i}\exp\!\left[-\frac{(z-250)^2}{2(220)^2}\right]
+ +a_{d,i}\operatorname{clip}\!\left(\frac{z-1000}{1000},0,1\right).
+\end{equation}
+四维参数采用固定种子的优化 Latin hypercube 采样。该参数化只产生平滑剖面，不制造
+网格尺度随机噪声。
+
+\subsection{Bellhop 高质量标签}
+
+每个环境样本生成一个 96$\times$256 的非相干 TL 场。海底采用声速 1700 m/s、密度
+2000 kg/m$^3$、衰减 0.8 dB/$\lambda$ 的流体半空间。正式计算前，在 8 个独立样本上依次
+运行 3200、6400、12,800 和 25,600 条射线，并以相邻级别场差评估数值稳定性。
+
+\begin{table}[H]
+\centering
+\caption{射线数逐级收敛审计}
+\begin{tabular}{lrrr}
+\toprule
+比较 & 平均 RMSE/dB & 最差 RMSE/dB & 平均 P95 绝对差/dB \\
+\midrule
+3200 $\rightarrow$ 6400 & 0.346 & 0.637 & 0.274 \\
+6400 $\rightarrow$ 12,800 & 0.306 & 0.538 & 0.157 \\
+12,800 $\rightarrow$ 25,600 & 0.230 & 0.286 & 0.162 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\figfull{0.94}{fig03_label_convergence.pdf}{射线数增加时的相邻级别 TL 差与单场计算成本。
+正式标签固定使用 25,600 条射线。}
+
+\subsection{样本规模、分层划分与文件契约}
+
+正式数据集包含 128 个样本，每条地形对应 32 条独立 SSP。每个地形内部固定划分为
+24 个训练、4 个验证和 4 个测试样本，汇总为 96/16/16。划分单位是完整环境样本，绝不
+把同一二维场的网格点随机分散到多个 split。测试标签在模型结构和超参数确定后才用于
+一次性评分。
+
+每个样本保存 TL、有效掩膜、SSP、地形、坐标、参数和 Bellhop case 元数据。打包文件
+\path{dataset.npz} 的 SHA-256 为 \DatasetHash；\path{manifest.json} 同时记录配置哈希、
+项目 Git SHA、声学求解器 Git SHA、Python 版本、生成耗时、覆盖率和失败清单。大型数据
+位于外部数据盘，不写入 Git；Git 中只保留配置、代码、哈希、轻量指标和报告。
+
+\section{地形锚定的改进型 FNO}
+
+\subsection{输入表示}
+
+声速和地形分别标准化为
+\begin{equation}
+  x_c(z,r)=\frac{c(z)-1500}{50},\qquad x_b(z,r)=\frac{b(r)}{2000}.
+\end{equation}
+一维 SSP 沿距离复制，一维地形沿深度复制，形成 $2\times96\times256$ 输入张量。网络
+内部再加入归一化深度和距离坐标通道。这样既保留函数输入的物理含义，也显式提供非平坦
+海底边界信息。
+
+\subsection{FNO 基本层}
+
+第 $\ell$ 层隐状态记为 $v_\ell(z,r)$。二维谱卷积先执行离散 Fourier 变换，在深度和距离
+方向分别保留 $K_z,K_r$ 个低频模态：
+\begin{equation}
+  \mathcal{K}_\ell(v)=\mathcal{F}^{-1}\!\left(
+  R_\ell(k_z,k_r)\,\mathcal{F}(v)(k_z,k_r)\right).
+\end{equation}
+谱路径描述全局传播结构，局部 $1\times1$ 卷积路径保留点态通道混合。带残差的更新为
+\begin{equation}
+  v_{\ell+1}=\operatorname{GELU}\!\left[
+  \operatorname{GN}\big(\mathcal{K}_\ell(v_\ell)+W_\ell v_\ell\big)+v_\ell\right].
+\end{equation}
+
+\subsection{针对声场任务的四项改进}
+
+\subsubsection{各向异性谱截断}
+深度 96 点、距离 256 点具有不同尺度，网络不使用相同截断数，而是分别选择
+$K_z=12$ 或 16、$K_r=24$ 或 48。较高的距离模态用于恢复会聚区沿程变化。
+
+\subsubsection{非周期复制填充}
+标准 Fourier 层隐含周期延拓，而 0--50 km 传播区间并不周期。网络在深度和距离末端分别
+复制填充 8 和 16 个网格，完成谱层后再裁剪，从而减弱边界拼接伪影。
+
+\subsubsection{训练地形锚点残差}
+对地形类别 $g$，仅使用训练样本计算锚点场
+\begin{equation}
+  \bar y_g(z,r)=\frac{\sum_{i\in\mathcal{D}_{\mathrm{train}},g_i=g}
+  m_i(z,r)y_i(z,r)}{\sum_{i\in\mathcal{D}_{\mathrm{train}},g_i=g}m_i(z,r)},
+\end{equation}
+其中 $m_i$ 为有效掩膜。目标残差尺度 $s_g$ 由训练残差标准差确定，最终预测为
+\begin{equation}
+  \hat y_i(z,r)=\bar y_{g_i}(z,r)+s_gF_\theta(x_{c,i},x_{b,i},z,r).
+\end{equation}
+锚点不读取验证或测试标签；它承担地形决定的稳定大尺度结构，FNO 专注于 SSP 引起的
+细化残差。部署时地形剖面属于冻结的四类之一，因此锚点可随模型一同封装。
+
+\subsubsection{零初始化输出头与 epoch-0 保护}
+残差头最后一层权重和偏置初始化为零，使初始网络严格等于地形锚点。训练器在第一次梯度
+更新前评估并保存 epoch-0 checkpoint，因此后续优化最差也不会丢失强锚点性能。
+
+\figfull{0.96}{fig04_model_architecture.pdf}{地形锚定残差 FNO：SSP 与地形进入各向异性
+神经算子，网络残差与仅由训练样本构造的地形锚点相加。}
+
+\subsection{训练目标与选模}
+
+主损失是有效网格上的均方误差：
+\begin{equation}
+  \mathcal{L}(\theta)=\frac{\sum_i\sum_{z,r}m_i(z,r)
+  \left[F_\theta(x_i)-\tilde y_i(z,r)\right]^2}
+  {\sum_i\sum_{z,r}m_i(z,r)},\qquad
+  \tilde y_i=\frac{y_i-\bar y_{g_i}}{s_g}.
+\end{equation}
+训练使用 AdamW、初始学习率 $10^{-3}$、weight decay $10^{-5}$、cosine 调度、batch size 16，
+最多 220 epochs。每个 epoch 后在完整验证样本上计算 dB 域 RMSE，并保存最优 checkpoint；
+测试集不参与早停或模型选择。
+
+\section{实验设计与评价方法}
+
+\subsection{对比方法与消融}
+
+\begin{table}[H]
+\centering
+\caption{对比方法和实验目的}
+\begin{tabularx}{\textwidth}{L{3.3cm}L{3.6cm}Y}
+\toprule
+方法 & 核心设置 & 作用 \\
+\midrule
+全局训练均值场 & 不使用输入，只输出所有训练场均值 & 主要难度基线；要求测试 RMSE $>4$ dB \\
+地形训练均值场 & 每类地形一个训练锚点，不学习 SSP 残差 & 更强的查表型基线 \\
+Global FNO-S & 1.33 M 参数，全局均值残差 & 验证地形输入能否由标准小 FNO 学习 \\
+Global FNO-L & 6.30 M 参数，提高各向异性模态 & 验证模型容量和距离模态作用 \\
+Anchor FNO-S & 1.33 M 参数，地形锚点残差 & 验证主要方法改进 \\
+Anchor FNO-L & 6.30 M 参数，地形锚点 + 高模态 & 最终候选模型 \\
+24/48/96 场训练 & 同一 Anchor FNO-S、同一密封测试集 & 数据量学习曲线 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{精度指标}
+
+在测试有效网格集合 $\Omega$ 上，误差 $e=\hat y-y$，定义
+\begin{align}
+  \RMSE &= \sqrt{\frac{1}{|\Omega|}\sum_{(i,z,r)\in\Omega}e_{i,z,r}^2},\\
+  \mathrm{MAE} &= \frac{1}{|\Omega|}\sum_{(i,z,r)\in\Omega}|e_{i,z,r}|,\\
+  \mathrm{Reduction} &=100\%\times\frac{\RMSE_{\mathrm{mean}}-\RMSE_{\mathrm{model}}}
+  {\RMSE_{\mathrm{mean}}}.
+\end{align}
+除总体指标外，同时报告单样本 RMSE 的中位数、P90 和最差值，以及真实 TL 梯度最高
+10\% 网格上的 RMSE，避免总体均值掩盖会聚边缘误差。
+
+\subsection{时延协议与独立复核}
+
+时延测试使用 batch=1，预热 10 次后重复 200 次；GPU 每次显式同步。计时包含 NumPy 到
+Torch 输入复制、前向计算、地形锚点解码和输出回 CPU，不包含磁盘加载。报告中使用 P95
+而非单次最小值。训练结束后，独立进程重新计算数据 SHA、重建特征、加载 checkpoint、
+只选择 test split 并重新评分和计时。
+
+\section{实验结果}
+
+\subsection{总体结果与相对基线降幅}
+
+正式测试的全局训练均值场 RMSE 为 \GlobalBaseline{} dB，超过 4 dB 难度门槛；地形训练
+均值场为 \TerrainBaseline{} dB。最终模型 \BestModel{} 将测试 RMSE 降至 \BestRMSE{} dB，
+MAE 为 \BestMAE{} dB，相对全局均值场下降 \RelativeReduction{}\%。
+
+\begin{table}[H]
+\centering
+\caption{密封测试集总体结果}
+\label{tab:results}
+\begin{tabular}{lrrrrr}
+\toprule
+方法 & 参数量/M & RMSE/dB & MAE/dB & P90 样本/dB & A100 P95/ms \\
+\midrule
+全局训练均值场 & -- & \GlobalBaseline & 3.830 & 6.379 & -- \\
+地形训练均值场 & -- & \TerrainBaseline & 0.520 & 1.772 & -- \\
+Global FNO-S & 1.33 & 1.030 & 0.502 & 1.380 & 4.00 \\
+Global FNO-L & 6.30 & 0.835 & 0.332 & 1.156 & 4.24 \\
+Anchor FNO-S & 1.33 & 0.898 & 0.342 & 1.228 & 3.92 \\
+Anchor FNO-L & 6.30 & \BestRMSE & \BestMAE & \BestPninety & 4.17 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\figfull{0.98}{fig05_main_results.pdf}{均值场、地形锚点与四个神经算子变体的测试 RMSE，
+以及各模型相对全局均值场的 RMSE 降幅。}
+
+\subsection{数据量消融}
+
+在不改变验证集和测试集的条件下，从每类地形的 24 个训练样本中固定抽取 6、12、24 个，
+对应总训练量 24、48、96。锚点和残差尺度也只由各轮实际训练样本计算。该实验直接衡量
+数据量收益，不混入额外地形或测试样本。
+
+\figfull{0.72}{fig06_data_size_ablation.pdf}{同一 Anchor FNO-S 在 24、48 和 96 个训练场下的
+学习曲线。横向比较使用完全相同的密封测试集。}
+
+\subsection{优化过程与典型场}
+
+\figfull{0.78}{fig07_training_curves.pdf}{四个主要 FNO 变体的验证 RMSE 轨迹。模型选择仅依赖
+验证集，红色虚线为 2 dB 门槛。}
+
+\figfull{0.99}{fig08_prediction_examples.pdf}{最终模型在测试集的中位样本和最差样本：
+SSP、Bellhop 参考、代理预测、绝对误差以及 1000 m 深度切片。}
+
+最终模型的 P90 单样本 RMSE 为 \BestPninety{} dB，最差单样本 RMSE 为 \BestWorst{} dB。
+二维结果表明，主要传播带和地形相关的沿程结构能够被正确恢复；较大误差仍集中在局部
+高梯度边缘，而非形成全场系统偏差。
+
+\figfull{0.96}{fig09_error_analysis.pdf}{测试集平均绝对误差、P95 绝对误差空间分布及单样本
+RMSE 直方图。}
+
+\subsection{计算时延}
+
+A100 GPU 上最终模型独立复核的完整推理 P95 为 \GpuPninetyfive{} ms；CPU 诊断 P95 为
+\CpuPninetyfive{} ms。最终大模型以 A100 为验收平台；若目标机器只使用 CPU，可采用
+Anchor FNO-S，其本次 CPU P95 为 53.59 ms、RMSE 为 0.898 dB。25,600 射线 Bellhop
+单场中位耗时为 \BellhopMedian{} s。Bellhop 时间只用于说明标签生成成本，不将不同软件
+栈的单次运行简单等同为严格加速比。
+
+\figfull{0.78}{fig10_latency.pdf}{四个主要模型的 batch=1 P95 时延与 25,600 射线 Bellhop
+单场中位耗时。纵轴采用对数尺度。}
+
+\section{结果分析与适用范围}
+
+\subsection{为什么相对均值场降幅具有说服力}
+
+只报告模型小于 2 dB 并不足以证明代理算子有价值：如果训练均值场本身已经低于 2 dB，
+模型可能只是重复一个近似固定场。本项目把全局均值场大于 4 dB 写入自动验收条件，并在
+正式标签生成前通过真实地形方位预筛构造有区分度的小任务域。因此，最终结果同时满足
+“任务不是平凡的”和“模型能够显著降低误差”两个条件。
+
+\subsection{地形锚点不是测试泄漏}
+
+每个锚点只由对应地形的训练样本计算；验证和测试标签不参与均值、尺度或网络参数估计。
+地形类别是模型输入环境的一部分，不是由 TL 标签反推。地形均值场作为显式 baseline
+单独报告，FNO 只有在其基础上进一步降低误差，才说明 SSP 残差学习有效。
+
+\subsection{结论边界}
+
+本报告可支持的结论限定为：在四条经筛选的巴士海峡 GEBCO 形态、六月 WOA23 窄 SSP、
+1 kHz、50 m 源深、50 km 和固定底质的仿真域内，模型能够复现当前 Bellhop 标签并满足
+精度及时延指标。当前不宣称：跨海区、未见地形类别、多频率、任意源深、任意底质或海试
+条件下仍保持同等精度。若甲方 Bellhop 的射线、束宽、边界实现或输出定义不同，应使用
+相同数据契约重新生成少量标签并复核，而不直接假定数值结果完全一致。
+
+\section{结论}
+
+本项目完成了一个从真实公开环境数据、Bellhop 高质量标签到神经算子快速推理的完整闭环：
+\begin{enumerate}
+  \item 固定 1 kHz、50 km、50 m 源深和二维输出网格，明确了可检验任务；
+  \item 基于 GEBCO 2026 与 WOA23 构造了 128 场小而有区分度的受控数据集；
+  \item 通过 25,600 射线收敛审计保证当前 reference 的数值稳定性；
+  \item 提出地形训练锚点、零初始化残差头和各向异性 FNO 组合方法；
+  \item 在全局均值场 \GlobalBaseline{} dB 的非平凡基线上，将测试 RMSE 降至
+  \BestRMSE{} dB，并以 \GpuPninetyfive{} ms P95 满足 100 ms 指标；
+  \item 提供数据哈希、配置、代码、独立复核与一键复现入口，支持后续在甲方机器上接续开发。
+\end{enumerate}
+
+\appendix
+\section{关键配置与版本信息}
+
+\begin{longtable}{L{4.4cm}L{9.6cm}}
+\toprule
+项目 & 冻结值 \\
+\midrule
+\endfirsthead
+\toprule
+项目 & 冻结值 \\
+\midrule
+\endhead
+数据配置 & \path{configs/realistic_terrain_mvp.yaml} \\
+实验配置 & \path{configs/realistic_campaign.yaml} \\
+数据集 ID & \path{bashi_gebco_selected_diverse_woa23_june_v0.5} \\
+样本数与划分 & 128；train/validation/test = 96/16/16 \\
+输出网格 & 96 depth $\times$ 256 range \\
+正式射线数 & 25,600/field \\
+数据 SHA-256 & \path{30f9864ef690c85d30a81cd4c2f1005029823d0800011321b0c7f03d6c530b76} \\
+最终模型 & \BestModel \\
+代码版本 & Git tag \path{technical-report-v1.3}，具体 SHA 见仓库 release \\
+大数据根目录 & \path{/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate} \\
+\bottomrule
+\end{longtable}
+
+\section{一键复现与学生接续开发}
+
+\subsection{仓库与目录}
+
+甲方机器建议保持两个兄弟仓库：
+\begin{lstlisting}[style=repro]
+acoustic-work/
+  ocean-acoustic-agent/       # Bellhop backend and task schema
+  ocean-acoustic-surrogate/   # dataset, FNO, evaluation and report
+\end{lstlisting}
+
+大型标签和 checkpoint 不提交 Git，统一放到：
+\begin{lstlisting}[style=repro,language=bash]
+export OCEAN_SURROGATE_ROOT=/mnt/data/xuangu-fang/ocean-acoustics/\
+projects/ocean-acoustic-surrogate
+\end{lstlisting}
+
+\subsection{一键入口}
+
+\begin{lstlisting}[style=repro,language=bash]
+cd acoustic-work/ocean-acoustic-surrogate
+
+# 1. Only install/sync and test; Bellhop is not executed.
+REPRO_MODE=check bash scripts/reproduce_mvp.sh
+
+# 2. Train the frozen final experiment from an existing n128 dataset.
+REPRO_MODE=train bash scripts/reproduce_mvp.sh
+
+# 3. Full pipeline: solver check, convergence, labels, training, verification.
+REPRO_MODE=full bash scripts/reproduce_mvp.sh
+
+# 4. Verify an existing checkpoint in a fresh process.
+export REPRO_RUN_DIR="$OCEAN_SURROGATE_ROOT/runs/<run_id>"
+REPRO_MODE=verify bash scripts/reproduce_mvp.sh
+\end{lstlisting}
+
+脚本默认使用本报告的 realistic config、128 样本和最终实验；也可通过
+\path{REPRO_CONFIG}、\path{REPRO_CAMPAIGN}、\path{REPRO_EXPERIMENT} 和
+\path{REPRO_SAMPLES} 显式覆盖。生成器以每个样本的 \path{sample.npz + metadata.json}
+作为断点，重复执行会跳过已完成样本。
+
+\subsection{等价分步命令}
+
+\begin{lstlisting}[style=repro,language=bash]
+uv sync --locked
+uv run ruff check .
+uv run pytest -q
+
+uv run ocean-acoustic-surrogate pilot \
+  configs/realistic_terrain_mvp.yaml --samples 8
+uv run ocean-acoustic-surrogate generate \
+  configs/realistic_terrain_mvp.yaml --samples 128
+uv run ocean-acoustic-surrogate profile \
+  configs/realistic_terrain_mvp.yaml --samples 128
+uv run ocean-acoustic-surrogate campaign \
+  configs/realistic_terrain_mvp.yaml configs/realistic_campaign.yaml \
+  --samples 128 --only real_r4_terrain_anchor_large_fno
+uv run ocean-acoustic-surrogate verify \
+  configs/realistic_terrain_mvp.yaml "$REPRO_RUN_DIR" \
+  --samples 128 --device auto
+\end{lstlisting}
+
+\section{核心代码位置与参考实现}
+
+\begin{table}[H]
+\centering
+\caption{后续开发的主要代码入口}
+\begin{tabularx}{\textwidth}{L{5.2cm}Y}
+\toprule
+文件 & 职责 \\
+\midrule
+\path{configs/realistic_terrain_mvp.yaml} & 环境、地形、SSP、Bellhop、split 和验收门槛 \\
+\path{configs/realistic_campaign.yaml} & 模型、训练超参数和消融实验 \\
+\path{src/ocean_acoustic_surrogate/ssp.py} & Latin hypercube 和平滑 SSP 构造 \\
+\path{src/ocean_acoustic_surrogate/dataset.py} & Bellhop task、收敛、断点生成和数据打包 \\
+\path{src/ocean_acoustic_surrogate/features.py} & SSP/地形输入和训练锚点变换 \\
+\path{src/ocean_acoustic_surrogate/models/fno.py} & 谱卷积、padding、残差 block 和零初始化头 \\
+\path{src/ocean_acoustic_surrogate/training.py} & 训练、验证选模、测试和时延 \\
+\path{src/ocean_acoustic_surrogate/verification.py} & 新进程 checkpoint 重载和密封测试复核 \\
+\path{scripts/reproduce_mvp.sh} & 一键复现入口 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{生成一个 Bellhop reference}
+
+\begin{lstlisting}[style=repro,language=Python]
+from ocean_acoustic_agent import run_simulation
+from ocean_acoustic_surrogate.config import MVPConfig
+from ocean_acoustic_surrogate.dataset import build_task
+from ocean_acoustic_surrogate.ssp import build_ssp_records
+
+cfg = MVPConfig.from_yaml("configs/realistic_terrain_mvp.yaml")
+record = build_ssp_records(
+    cfg.ssp_family, 1, cfg.contract.seed,
+    template_cycle_stride=len(cfg.contract.bathymetry.profiles),
+)[0]
+task = build_task(
+    cfg, record, cfg.contract.reference_num_rays,
+    task_id="reference_smoke_00000",
+)
+result = run_simulation(task)
+if result.status == "failed" or result.tl_field is None:
+    raise RuntimeError(result.error_message)
+print(result.tl_field["tl_db"].shape)
+\end{lstlisting}
+
+正式生产应调用 \path{generate} 命令，而不是手写循环；正式生成器额外保存 case、配置哈希、
+地形类别、split、耗时、有效掩膜和失败记录。
+
+\subsection{调用训练和独立复核}
+
+\begin{lstlisting}[style=repro,language=Python]
+from ocean_acoustic_surrogate.config import MVPConfig, load_campaign
+from ocean_acoustic_surrogate.training import run_experiment
+from ocean_acoustic_surrogate.verification import verify_run
+
+cfg = MVPConfig.from_yaml("configs/realistic_terrain_mvp.yaml")
+campaign = load_campaign("configs/realistic_campaign.yaml")
+experiment = next(
+    item for item in campaign["experiments"]
+    if item["id"] == "real_r4_terrain_anchor_large_fno"
+)
+dataset = cfg.dataset_root / "n128/dataset.npz"
+run_dir = run_experiment(
+    cfg, dataset, experiment, campaign["training_defaults"]
+)
+verification = verify_run(cfg, dataset, run_dir, device_name="auto")
+print(verification)
+\end{lstlisting}
+
+\subsection{复现通过判据}
+
+一次完整复现至少保留 \path{dataset.npz}、\path{manifest.json}、
+\path{convergence_report.json}、\path{model.pt}、\path{metrics.json}、
+\path{history.json}、\path{predictions.npz} 和
+\path{independent_verification_<device>.json}。验收同时检查
+\begin{equation}
+  \RMSE_{\mathrm{test}}\le2\ \mathrm{dB},\quad
+  \mathrm{MAE}_{\mathrm{test}}\le2\ \mathrm{dB},\quad
+  \mathrm{P95}_{\mathrm{latency}}\le100\ \mathrm{ms},\quad
+  \RMSE_{\mathrm{global\ mean}}>4\ \mathrm{dB}.
+\end{equation}
+若复现不一致，依次检查数据 SHA、两个仓库 Git SHA、配置哈希、Bellhop field mode 与射线
+数、split、模型 ID 和 CUDA/FFT 后端；不应通过修改测试划分或放宽误差阈值解决。
+
+\section{参考资料}
+
+\begin{enumerate}[label={[\arabic*]}]
+  \item Z. Li et al., ``Fourier Neural Operator for Parametric Partial Differential Equations,''
+  ICLR, 2021.
+  \item M. B. Porter, \textit{The BELLHOP Manual and User's Guide}, 2011.
+  \item F. B. Jensen, W. A. Kuperman, M. B. Porter, and H. Schmidt,
+  \textit{Computational Ocean Acoustics}, 2nd ed., Springer, 2011.
+  \item NOAA NCEI, \textit{World Ocean Atlas 2023},
+  \url{https://www.ncei.noaa.gov/access/world-ocean-atlas-2023/}.
+  \item GEBCO Compilation Group, \textit{GEBCO Gridded Bathymetry Data},
+  \url{https://www.gebco.net/data-products/gridded-bathymetry-data}.
+  \item IOC, SCOR and IAPSO, \textit{The International Thermodynamic Equation of Seawater
+  -- 2010: Calculation and Use of Thermodynamic Properties}, 2010.
+\end{enumerate}
+
+\vfill
+\begin{center}
+\color{gray}\small —— 报告结束 ——
+\end{center}
+
+\end{document}

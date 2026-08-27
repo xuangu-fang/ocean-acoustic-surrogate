@@ -2,14 +2,14 @@
 set -euo pipefail
 
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-artifact_root="${OCEAN_SURROGATE_ROOT:-/home/ubuntu/ocean-acoustic-surrogate-artifacts}"
+artifact_root="${OCEAN_SURROGATE_ROOT:-/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate}"
 
 cd "${project_root}"
-OCEAN_SURROGATE_ROOT="${artifact_root}" uv run python scripts/generate_technical_report_figures.py
+OCEAN_SURROGATE_ROOT="${artifact_root}" uv run python scripts/generate_realistic_report_figures.py
 
 cd docs/technical_report
-latexmk -xelatex -interaction=nonstopmode -halt-on-error technical_report.tex
-cp technical_report.pdf ../Ocean_Acoustic_Surrogate_Technical_Report_v1.2.pdf
-latexmk -C technical_report.tex
+latexmk -xelatex -interaction=nonstopmode -halt-on-error technical_report_v1.3.tex
+cp technical_report_v1.3.pdf ../Ocean_Acoustic_Surrogate_Technical_Report_v1.3.pdf
+latexmk -C technical_report_v1.3.tex
 
-echo "${project_root}/docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.2.pdf"
+echo "${project_root}/docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.3.pdf"

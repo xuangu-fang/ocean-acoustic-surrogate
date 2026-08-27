@@ -1,0 +1,36 @@
+{
+  "dataset_id": "bashi_gebco_selected_diverse_woa23_june_v0.5",
+  "dataset_sha256": "30f9864ef690c85d30a81cd4c2f1005029823d0800011321b0c7f03d6c530b76",
+  "run_id": "20260827T152235Z_real_r4_terrain_anchor_large_fno",
+  "experiment_id": "real_r4_terrain_anchor_large_fno",
+  "effective_train_samples": 96,
+  "global_mean_field_baseline_test_rmse_db": 5.586946136140609,
+  "terrain_mean_field_baseline_test_rmse_db": 1.3373695626959865,
+  "test": {
+    "rmse_db": 0.7887965689511435,
+    "mae_db": 0.2709772437519088,
+    "p95_absolute_error_db": 1.005929565429688,
+    "p90_sample_rmse_db": 1.1252358036886165,
+    "worst_sample_rmse_db": 1.2650375863124823,
+    "high_gradient_rmse_db": 2.1619559845243623,
+    "rmse_reduction_vs_global_mean_percent": 85.88143594496806
+  },
+  "training_process_latency": {
+    "gpu_p95_ms": 4.170170379802585,
+    "cpu_p95_ms": 110.26994697749615
+  },
+  "independent_cuda_verification": {
+    "recomputed_test_rmse_db": 0.7887748316953203,
+    "rmse_absolute_delta_db": 0.000021737255823217616,
+    "checkpoint_reload_matches_rmse": true,
+    "gpu_p95_ms": 4.188137548044324,
+    "verification_pass": true
+  },
+  "acceptance": {
+    "test_rmse_at_most_2_db": true,
+    "test_mae_at_most_2_db": true,
+    "gpu_p95_at_most_100_ms": true,
+    "global_mean_baseline_above_4_db": true,
+    "overall_pass": true
+  }
+}

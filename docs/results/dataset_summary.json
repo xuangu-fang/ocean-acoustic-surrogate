@@ -1,58 +1,92 @@
 {
-  "dataset_id": "scs_june_narrow_v0.1",
-  "dataset_path": "/home/ubuntu/ocean-acoustic-surrogate-artifacts/datasets/scs_june_narrow_v0.1/n512/dataset.npz",
-  "dataset_sha256": "13f4246b86a2fff33f2e5d587c1443be47eb15b4ad3d5c413688464ed8c7281d",
-  "n_samples": 512,
+  "dataset_id": "bashi_gebco_selected_diverse_woa23_june_v0.5",
+  "dataset_path": "/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate/datasets/bashi_gebco_selected_diverse_woa23_june_v0.5/n128/dataset.npz",
+  "dataset_sha256": "30f9864ef690c85d30a81cd4c2f1005029823d0800011321b0c7f03d6c530b76",
+  "n_samples": 128,
   "split_counts": {
-    "train": 384,
-    "validation": 64,
-    "test": 64
+    "train": 96,
+    "validation": 16,
+    "test": 16
   },
   "field_shape": [
     96,
     256
   ],
-  "finite_coverage": 0.9968766371409097,
+  "finite_coverage": 0.9986689885457356,
   "bellhop_wall_seconds": {
-    "total": 4724.249696227722,
-    "median": 9.137509679887444,
-    "p95": 9.492428508633747
+    "total": 1085.5739264013246,
+    "median": 8.01861798018217,
+    "p95": 12.681778752291574
   },
-  "dataset_size_bytes": 41170478,
+  "dataset_size_bytes": 10398603,
   "parameter_ranges": {
     "global_offset_mps": {
-      "minimum": -1.4943968057632446,
-      "maximum": 1.4953219890594482
+      "minimum": -0.39798903465270996,
+      "maximum": 0.39409467577934265
     },
     "thermocline_amplitude_mps": {
-      "minimum": -1.997984766960144,
-      "maximum": 1.9951732158660889
+      "minimum": -0.5945320725440979,
+      "maximum": 0.5949476361274719
     },
     "axis_shift_m": {
-      "minimum": -99.82151794433594,
-      "maximum": 99.82167053222656
+      "minimum": -24.66754150390625,
+      "maximum": 24.99721336364746
     },
     "deep_gradient_mps": {
-      "minimum": -1.4965192079544067,
-      "maximum": 1.4945037364959717
+      "minimum": -0.39507317543029785,
+      "maximum": 0.3959086537361145
     }
   },
   "tl_db": {
-    "minimum": 37.96933364868164,
-    "maximum": 94.13744354248047,
-    "mean": 81.3347396850586,
-    "standard_deviation": 8.252556800842285
+    "minimum": 37.97018814086914,
+    "maximum": 148.56802368164062,
+    "mean": 83.84420013427734,
+    "standard_deviation": 10.57552433013916
   },
   "training_mean_field_baseline_test": {
-    "rmse_db": 1.4211160363928836,
-    "mae_db": 0.8045558317892757,
-    "bias_db": -0.029763961718410996,
-    "p95_absolute_error_db": 2.9063186645507812,
-    "maximum_absolute_error_db": 25.75922393798828,
-    "cell_count": 1567951,
-    "macro_mean_rmse_db": 1.3752844132614719,
-    "median_sample_rmse_db": 1.5934253703071577,
-    "p90_sample_rmse_db": 1.7747544020744084,
-    "worst_sample_rmse_db": 1.9100693348756337
+    "rmse_db": 5.586946136140609,
+    "mae_db": 3.830171747910013,
+    "bias_db": 0.024777036316371667,
+    "p95_absolute_error_db": 11.801858520507814,
+    "maximum_absolute_error_db": 49.20647430419922,
+    "cell_count": 392687,
+    "macro_mean_rmse_db": 5.561365393035347,
+    "median_sample_rmse_db": 5.349563283844464,
+    "p90_sample_rmse_db": 6.379253218855617,
+    "worst_sample_rmse_db": 6.477964514347383
+  },
+  "training_terrain_mean_field_baseline_test": {
+    "rmse_db": 1.3373695626959865,
+    "mae_db": 0.5198912191886788,
+    "bias_db": 0.024285420461784345,
+    "p95_absolute_error_db": 2.312332916259766,
+    "maximum_absolute_error_db": 34.958580017089844,
+    "cell_count": 392687,
+    "macro_mean_rmse_db": 1.2421970362636527,
+    "median_sample_rmse_db": 1.0110005105561128,
+    "p90_sample_rmse_db": 1.7721204170171108,
+    "worst_sample_rmse_db": 2.4771777494220877
+  },
+  "terrain_profile_counts": {
+    "gebco_az030_screened": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az090_screened": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az210_screened": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az225_screened": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    }
   }
 }

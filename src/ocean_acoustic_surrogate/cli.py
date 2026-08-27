@@ -23,6 +23,10 @@ def _parser() -> argparse.ArgumentParser:
     campaign.add_argument("campaign", type=Path)
     campaign.add_argument("--samples", type=int, default=512)
     campaign.add_argument("--only", nargs="*", default=None)
+    verify = subparsers.add_parser("verify", help="reload a checkpoint and verify the sealed test")
+    verify.add_argument("config", type=Path)
+    verify.add_argument("run_dir", type=Path)
+    verify.add_argument("--samples", type=int, default=512)
     return parser
 
 
@@ -38,6 +42,12 @@ def main() -> None:
         from .dataset import generate_dataset
 
         print(generate_dataset(config, args.samples))
+        return
+    if args.command == "verify":
+        from .verification import verify_run
+
+        dataset_path = config.dataset_root / f"n{args.samples}" / "dataset.npz"
+        print(verify_run(config, dataset_path, args.run_dir))
         return
     campaign = load_campaign(args.campaign)
     dataset_path = config.dataset_root / f"n{args.samples}" / "dataset.npz"

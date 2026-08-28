@@ -1,11 +1,13 @@
 # Ocean Acoustic Surrogate
 
-针对一个刻意收窄的验收域，学习从深海声速剖面到二维传播损失场的快速代理：
+针对一个刻意收窄、真实数据锚定的验收域，学习从深海声速剖面和距离相关地形到二维
+传播损失场的快速代理：
 
-- 水深 2000 m、距离无关环境；
+- GEBCO 2026 巴士海峡候选区四条平滑低维地形，水深包络 2000--4800 m；
+- WOA23 6 月温盐经 TEOS-10 转换，并施加小幅平滑 SSP 变化；
 - 沙质流体半空间：1700 m/s、2000 kg/m³、0.8 dB/λ；
 - 声源深度 50 m、频率 1000 Hz、距离 50 km；
-- Bellhop 非相干 TL 标签；
+- 25,600-ray Bellhop 非相干 TL 标签，输出网格 96×256；
 - batch=1 热态完整推理 P95 不超过 100 ms；
 - 密封同分布测试集 TL RMSE 不超过 2 dB。
 
@@ -15,13 +17,13 @@ checkpoint 和完整日志保存在环境变量 `OCEAN_SURROGATE_ROOT` 指向的
 
 ## 已完成结果
 
-512 条 25,600-ray Bellhop 标签已全部成功生成并冻结。五轮实验的精度优胜模型在密封
-测试集达到 RMSE 0.5165 dB、MAE 0.1802 dB，A100 完整推理 P95 4.73 ms；1.33 M
-参数的小模型在独立 CPU 复核中达到 RMSE 0.7582 dB、P95 38.32 ms。两者均显著通过
-2 dB / 100 ms 门槛。
+256 条 25,600-ray Bellhop 标签已全部成功生成并冻结，按 192/32/32 划分训练、验证和
+密封测试集。全局训练均值场测试 RMSE 为 5.625 dB；最终 Global FNO-L 将其降至
+0.703 dB（下降 87.49%），MAE 为 0.261 dB，独立 A100 完整推理 P95 为 4.47 ms。
+1.33 M 参数的 Global FNO-S 达到 RMSE 0.843 dB、CPU P95 50.11 ms。
 
 面向甲方的任务定义、数据来源与构造、改进型 FNO 方法、实验协议和结果分析见
-[`docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.2.pdf`](docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.2.pdf)；
+[`docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.4.pdf`](docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.4.pdf)；
 可编辑 LaTeX 源码和图表位于 [`docs/technical_report/`](docs/technical_report/)。详细工程记录另见
 [`docs/project_report.md`](docs/project_report.md)。
 
@@ -51,14 +53,16 @@ uv sync --locked
 uv run pytest
 
 # 小型收敛审计
-uv run ocean-acoustic-surrogate pilot configs/mvp.yaml --samples 8
+uv run ocean-acoustic-surrogate pilot configs/realistic_terrain_mvp.yaml --samples 8
 
-# 生成 512 场正式数据
-uv run ocean-acoustic-surrogate generate configs/mvp.yaml --samples 512
+# 生成 256 场正式数据
+uv run ocean-acoustic-surrogate generate configs/realistic_terrain_mvp.yaml --samples 256
 
-# 运行全部模型迭代
-uv run ocean-acoustic-surrogate campaign configs/mvp.yaml configs/campaign.yaml
+# 运行冻结实验组
+uv run ocean-acoustic-surrogate campaign \
+  configs/realistic_terrain_mvp.yaml configs/realistic_campaign.yaml --samples 256
 
 # 独立重载 checkpoint，在指定设备复核冻结测试集
-uv run ocean-acoustic-surrogate verify configs/mvp.yaml /path/to/run --device cuda
+uv run ocean-acoustic-surrogate verify \
+  configs/realistic_terrain_mvp.yaml /path/to/run --samples 256 --device cuda
 ```

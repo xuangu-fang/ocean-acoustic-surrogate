@@ -8,8 +8,8 @@ cd "${project_root}"
 OCEAN_SURROGATE_ROOT="${artifact_root}" uv run python scripts/generate_realistic_report_figures.py
 
 cd docs/technical_report
-latexmk -xelatex -interaction=nonstopmode -halt-on-error technical_report_v1.3.tex
-cp technical_report_v1.3.pdf ../Ocean_Acoustic_Surrogate_Technical_Report_v1.3.pdf
-latexmk -C technical_report_v1.3.tex
+latexmk -xelatex -interaction=nonstopmode -halt-on-error technical_report_v1.4.tex
+cp technical_report_v1.4.pdf ../Ocean_Acoustic_Surrogate_Technical_Report_v1.4.pdf
+latexmk -C technical_report_v1.4.tex
 
-echo "${project_root}/docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.3.pdf"
+echo "${project_root}/docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.4.pdf"

@@ -9,7 +9,8 @@ samples="${REPRO_SAMPLES:-256}"
 run_dir="${REPRO_RUN_DIR:-}"
 config="${REPRO_CONFIG:-configs/realistic_terrain_mvp.yaml}"
 campaign="${REPRO_CAMPAIGN:-configs/realistic_campaign.yaml}"
-experiment="${REPRO_EXPERIMENT:-real_r4_terrain_anchor_large_fno}"
+experiment="${REPRO_EXPERIMENT:-real_r2_terrain_fno}"
+reuse_prefix_from="${REPRO_REUSE_PREFIX_FROM:-}"
 
 export OCEAN_SURROGATE_ROOT="${artifact_root}"
 
@@ -29,6 +30,7 @@ usage() {
     "  REPRO_CAMPAIGN         experiment config, default configs/realistic_campaign.yaml" \
     "  REPRO_EXPERIMENT       experiment id to train" \
     "  REPRO_SAMPLES          sample count, default 256" \
+    "  REPRO_REUSE_PREFIX_FROM  optional earlier dataset root with an identical prefix" \
     "  REPRO_RUN_DIR          run directory required by verify mode"
 }
 
@@ -78,7 +80,11 @@ if [[ "${mode}" == "full" ]]; then
     uv run python scripts/check_env.py
   )
   uv run ocean-acoustic-surrogate pilot "${config}" --samples 8
-  uv run ocean-acoustic-surrogate generate "${config}" --samples "${samples}"
+  generate_args=("${config}" --samples "${samples}")
+  if [[ -n "${reuse_prefix_from}" ]]; then
+    generate_args+=(--reuse-prefix-from "${reuse_prefix_from}")
+  fi
+  uv run ocean-acoustic-surrogate generate "${generate_args[@]}"
   uv run ocean-acoustic-surrogate profile "${config}" --samples "${samples}"
 fi
 

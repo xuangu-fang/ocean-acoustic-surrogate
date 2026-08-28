@@ -1,92 +1,80 @@
 {
-  "dataset_id": "bashi_gebco_selected_diverse_woa23_june_v0.5",
-  "dataset_path": "/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate/datasets/bashi_gebco_selected_diverse_woa23_june_v0.5/n128/dataset.npz",
-  "dataset_sha256": "30f9864ef690c85d30a81cd4c2f1005029823d0800011321b0c7f03d6c530b76",
-  "n_samples": 128,
+  "dataset_id": "bashi_gebco_selected_diverse_woa23_june_v0.6_n256",
+  "dataset_path": "/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate/datasets/bashi_gebco_selected_diverse_woa23_june_v0.6_n256/n256/dataset.npz",
+  "dataset_sha256": "b66f4f367b93ef6f84802604e1d7f25e85d1b6a20a224252e6776b1285ef1d37",
+  "n_samples": 256,
   "split_counts": {
-    "train": 96,
-    "validation": 16,
-    "test": 16
+    "train": 192,
+    "validation": 32,
+    "test": 32
   },
   "field_shape": [
     96,
     256
   ],
-  "finite_coverage": 0.9986689885457356,
+  "finite_coverage": 0.9986667633056641,
   "bellhop_wall_seconds": {
-    "total": 1085.5739264013246,
-    "median": 8.01861798018217,
-    "p95": 12.681778752291574
+    "total": 2171.387249631807,
+    "median": 7.996442672330886,
+    "p95": 12.61325467005372
   },
-  "dataset_size_bytes": 10398603,
+  "dataset_size_bytes": 20788344,
   "parameter_ranges": {
     "global_offset_mps": {
       "minimum": -0.39798903465270996,
-      "maximum": 0.39409467577934265
+      "maximum": 0.3951898515224457
     },
     "thermocline_amplitude_mps": {
       "minimum": -0.5945320725440979,
-      "maximum": 0.5949476361274719
+      "maximum": 0.5951091647148132
     },
     "axis_shift_m": {
-      "minimum": -24.66754150390625,
+      "minimum": -24.890451431274414,
       "maximum": 24.99721336364746
     },
     "deep_gradient_mps": {
-      "minimum": -0.39507317543029785,
+      "minimum": -0.3976692259311676,
       "maximum": 0.3959086537361145
     }
   },
   "tl_db": {
     "minimum": 37.97018814086914,
-    "maximum": 148.56802368164062,
-    "mean": 83.84420013427734,
-    "standard_deviation": 10.57552433013916
+    "maximum": 148.71168518066406,
+    "mean": 83.85218048095703,
+    "standard_deviation": 10.587813377380371
   },
   "training_mean_field_baseline_test": {
-    "rmse_db": 5.586946136140609,
-    "mae_db": 3.830171747910013,
-    "bias_db": 0.024777036316371667,
-    "p95_absolute_error_db": 11.801858520507814,
-    "maximum_absolute_error_db": 49.20647430419922,
-    "cell_count": 392687,
-    "macro_mean_rmse_db": 5.561365393035347,
-    "median_sample_rmse_db": 5.349563283844464,
-    "p90_sample_rmse_db": 6.379253218855617,
-    "worst_sample_rmse_db": 6.477964514347383
-  },
-  "training_terrain_mean_field_baseline_test": {
-    "rmse_db": 1.3373695626959865,
-    "mae_db": 0.5198912191886788,
-    "bias_db": 0.024285420461784345,
-    "p95_absolute_error_db": 2.312332916259766,
-    "maximum_absolute_error_db": 34.958580017089844,
-    "cell_count": 392687,
-    "macro_mean_rmse_db": 1.2421970362636527,
-    "median_sample_rmse_db": 1.0110005105561128,
-    "p90_sample_rmse_db": 1.7721204170171108,
-    "worst_sample_rmse_db": 2.4771777494220877
+    "rmse_db": 5.624675353974846,
+    "mae_db": 3.8567406715507024,
+    "bias_db": -0.00035104602560313554,
+    "p95_absolute_error_db": 11.872488403320313,
+    "maximum_absolute_error_db": 49.391868591308594,
+    "cell_count": 785393,
+    "macro_mean_rmse_db": 5.597845969122218,
+    "median_sample_rmse_db": 5.3539319277821935,
+    "p90_sample_rmse_db": 6.386308000586957,
+    "worst_sample_rmse_db": 6.455646405523103
   },
   "terrain_profile_counts": {
     "gebco_az030_screened": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+      "train": 48,
+      "validation": 8,
+      "test": 8
     },
     "gebco_az090_screened": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+      "train": 48,
+      "validation": 8,
+      "test": 8
     },
     "gebco_az210_screened": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+      "train": 48,
+      "validation": 8,
+      "test": 8
     },
     "gebco_az225_screened": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+      "train": 48,
+      "validation": 8,
+      "test": 8
     }
   }
 }

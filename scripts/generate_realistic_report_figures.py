@@ -102,7 +102,7 @@ def plot_pipeline() -> None:
         (0.02, "Public data", "GEBCO 2026\nWOA23 + TEOS-10", "#e8f1f8"),
         (0.22, "Controlled domain", "24-azimuth screen\n4 terrain × narrow SSP", "#edf6f4"),
         (0.42, "Reference labels", "Bellhop incoherent TL\n25,600 rays / field", "#fff3e6"),
-        (0.62, "Residual operator", "Terrain anchor\n+ anisotropic FNO", "#eaf3eb"),
+        (0.62, "Residual operator", "Global residual scaling\n+ anisotropic FNO", "#eaf3eb"),
         (0.82, "Sealed evaluation", "RMSE / MAE\nP95 latency", "#f1edf8"),
     ]
     for x, title, body, color in boxes:
@@ -113,21 +113,56 @@ def plot_pipeline() -> None:
 
 
 def plot_method() -> None:
-    fig, axis = plt.subplots(figsize=(13.0, 4.5), constrained_layout=True)
+    fig, axis = plt.subplots(figsize=(17.2, 6.4), constrained_layout=True)
     axis.set_xlim(0, 1)
     axis.set_ylim(0, 1)
     axis.axis("off")
-    _box(axis, 0.03, 0.58, 0.16, 0.26, "SSP channel", "$[c(z)-1500]/50$\nreplicated over range", "#e8f1f8")
-    _box(axis, 0.03, 0.16, 0.16, 0.26, "Terrain channel", "$b(r)/2000$\nreplicated over depth", "#edf6f4")
-    _box(axis, 0.27, 0.37, 0.18, 0.28, "Anisotropic FNO", "spectral + local paths\npadding + residual blocks", "#fff3e6")
-    _box(axis, 0.53, 0.58, 0.18, 0.26, "Learned residual", "$s_g F_\\theta(c,b,z,r)$\nzero-initialized head", "#eaf3eb")
-    _box(axis, 0.53, 0.16, 0.18, 0.26, "Terrain anchor", "$\\bar{y}_g(z,r)$\ntraining fields only", "#f1edf8")
-    _box(axis, 0.80, 0.37, 0.16, 0.28, "Predicted TL", "$\\hat y=\\bar y_g+s_gF_\\theta$\n96 × 256 grid", "#e8f1f8")
-    _arrow(axis, (0.19, 0.71), (0.27, 0.56))
-    _arrow(axis, (0.19, 0.29), (0.27, 0.44))
-    _arrow(axis, (0.45, 0.51), (0.53, 0.71))
-    _arrow(axis, (0.71, 0.71), (0.80, 0.56))
-    _arrow(axis, (0.71, 0.29), (0.80, 0.44))
+    top = [
+        (0.015, 0.13, "Raw environment", "SSP [B, 41]\nterrain [B, 256]", "#e8f1f8"),
+        (0.175, 0.13, "Feature assembly", "normalize + replicate\n[B, 2, 96, 256]", "#edf6f4"),
+        (0.335, 0.13, "Coordinates + lift", "append z,r; 1×1 conv\n[B, 32, 96, 256]", "#fff3e6"),
+        (0.495, 0.13, "Replicate padding", "depth +8, range +16\n[B, 32, 104, 272]", "#f1edf8"),
+        (0.655, 0.13, "4 FNO blocks", "spectral + local + skip\n[B, 32, 104, 272]", "#eaf3eb"),
+        (0.815, 0.17, "Crop + project", "32→128→1\n[B, 1, 96, 256]", "#e8f1f8"),
+    ]
+    for x, width, title, body, color in top:
+        _box(axis, x, 0.66, width, 0.25, title, body, color)
+    for left, right in pairwise(top):
+        _arrow(axis, (left[0] + left[1], 0.785), (right[0], 0.785))
+
+    _box(axis, 0.015, 0.20, 0.105, 0.22, "Block input", "$V_\\ell$\n[B,32,104,272]", "#f1edf8")
+    _box(axis, 0.165, 0.29, 0.13, 0.20, "rFFT2", "[B,32,104,137]\nselect ±16 × 48", "#e8f1f8")
+    _box(axis, 0.34, 0.29, 0.14, 0.20, "Complex mixing", "$R_\\ell(k_z,k_r)$\n32 input → 32 output", "#fff3e6")
+    _box(axis, 0.525, 0.29, 0.12, 0.20, "irFFT2", "global update\n[B,32,104,272]", "#e8f1f8")
+    _box(axis, 0.34, 0.03, 0.18, 0.20, "Local path", "1×1 convolution\n[B,32,104,272]", "#edf6f4")
+    _box(axis, 0.70, 0.20, 0.14, 0.22, "Block update", "sum + GroupNorm\n+ skip + GELU", "#eaf3eb")
+    _box(axis, 0.88, 0.20, 0.10, 0.22, "TL decode", "$\\bar y+s f$\n[B,96,256]", "#f1edf8")
+    _arrow(axis, (0.12, 0.35), (0.165, 0.39))
+    _arrow(axis, (0.295, 0.39), (0.34, 0.39))
+    _arrow(axis, (0.48, 0.39), (0.525, 0.39))
+    _arrow(axis, (0.645, 0.39), (0.70, 0.35))
+    _arrow(axis, (0.12, 0.26), (0.34, 0.13))
+    _arrow(axis, (0.52, 0.13), (0.70, 0.27))
+    _arrow(axis, (0.84, 0.31), (0.88, 0.31))
+    axis.text(
+        0.50,
+        0.52,
+        "One anisotropic FNO block (H=32, Kz=16, Kr=48); the block output retains the padded spatial shape",
+        ha="center",
+        va="center",
+        fontsize=9,
+        color=NAVY,
+        fontweight="bold",
+    )
+    axis.text(
+        0.93,
+        0.13,
+        "stored train-only mean: [96, 256] + one scale",
+        ha="center",
+        va="center",
+        fontsize=8,
+        color=NAVY,
+    )
     _save(fig, "fig04_model_architecture")
 
 
@@ -242,16 +277,17 @@ def _run_label(experiment_id: str) -> str:
     labels = {
         "real_r1_small_terrain_fno": "Global FNO-S",
         "real_r2_terrain_fno": "Global FNO-L",
-        "real_r3_terrain_anchor_fno": "Anchor FNO-S",
-        "real_r4_terrain_anchor_large_fno": "Anchor FNO-L",
-        "real_r5_anchor_data48": "Anchor FNO (48)",
-        "real_r6_anchor_data96": "Anchor FNO (96)",
+        "real_r5_global_data48": "Global FNO-S (48)",
+        "real_r6_global_data96": "Global FNO-S (96)",
     }
     return labels.get(experiment_id, experiment_id)
 
 
 def plot_main_results(runs: list[dict]) -> None:
-    main = [run for run in runs if run["metrics"]["experiment_id"].startswith("real_r")][:4]
+    main = [run for run in runs if run["metrics"]["experiment_id"] in {
+        "real_r1_small_terrain_fno",
+        "real_r2_terrain_fno",
+    }]
     baseline = main[0]["metrics"]["mean_field_baseline_test"]["rmse_db"]
     labels = ["Global mean"] + [
         _run_label(run["metrics"]["experiment_id"]) for run in main
@@ -259,7 +295,7 @@ def plot_main_results(runs: list[dict]) -> None:
     values = [baseline] + [
         run["metrics"]["metrics"]["test"]["aggregate"]["rmse_db"] for run in main
     ]
-    colors = ["#9aa5ad"] + [BLUE, NAVY, TEAL, GREEN]
+    colors = ["#9aa5ad"] + [BLUE, NAVY]
     fig, axes = plt.subplots(1, 2, figsize=(13.5, 4.8), constrained_layout=True)
     bars = axes[0].bar(labels, values, color=colors)
     axes[0].axhline(2.0, color=RED, linestyle="--", label="2 dB gate")
@@ -271,7 +307,7 @@ def plot_main_results(runs: list[dict]) -> None:
     bars = axes[1].bar(
         [_run_label(run["metrics"]["experiment_id"]) for run in main],
         reductions,
-        color=[BLUE, NAVY, TEAL, GREEN],
+        color=[BLUE, NAVY],
     )
     axes[1].set(ylabel="RMSE reduction vs global mean (%)", title="Relative improvement")
     axes[1].tick_params(axis="x", rotation=24)
@@ -282,9 +318,9 @@ def plot_main_results(runs: list[dict]) -> None:
 
 def plot_data_ablation(runs: list[dict]) -> None:
     wanted = {
-        "real_r5_anchor_data48",
-        "real_r6_anchor_data96",
-        "real_r3_terrain_anchor_fno",
+        "real_r5_global_data48",
+        "real_r6_global_data96",
+        "real_r1_small_terrain_fno",
     }
     points = []
     for run in runs:
@@ -308,7 +344,7 @@ def plot_data_ablation(runs: list[dict]) -> None:
     axis.set(
         xlabel="Effective training fields",
         ylabel="Held-out test RMSE (dB)",
-        title="Grouped data-size ablation on the same sealed test set",
+        title="Data-size ablation on the same sealed test set",
         xticks=x,
     )
     axis.grid(alpha=0.18)
@@ -320,8 +356,6 @@ def plot_training(runs: list[dict]) -> None:
     main = [run for run in runs if run["metrics"]["experiment_id"] in {
         "real_r1_small_terrain_fno",
         "real_r2_terrain_fno",
-        "real_r3_terrain_anchor_fno",
-        "real_r4_terrain_anchor_large_fno",
     }]
     fig, axis = plt.subplots(figsize=(8.2, 4.8), constrained_layout=True)
     for run in main:
@@ -415,15 +449,13 @@ def plot_latency(runs: list[dict], pilot: dict) -> None:
     main = [run for run in runs if run["metrics"]["experiment_id"] in {
         "real_r1_small_terrain_fno",
         "real_r2_terrain_fno",
-        "real_r3_terrain_anchor_fno",
-        "real_r4_terrain_anchor_large_fno",
     }]
     labels = [_run_label(run["metrics"]["experiment_id"]) for run in main] + ["Bellhop 25.6k"]
     values = [run["metrics"]["latency"]["gpu"]["p95_ms"] for run in main] + [
         pilot["timing_seconds"]["25600"]["median"] * 1000.0
     ]
     fig, axis = plt.subplots(figsize=(8.4, 4.8), constrained_layout=True)
-    bars = axis.bar(labels, values, color=[BLUE, NAVY, TEAL, GREEN, "#9aa5ad"])
+    bars = axis.bar(labels, values, color=[BLUE, NAVY, "#9aa5ad"])
     axis.axhline(100.0, color=RED, linestyle="--", label="100 ms gate")
     axis.set_yscale("log")
     axis.set(ylabel="Batch=1 wall time (ms, log scale)", title="Surrogate latency vs reference solver")

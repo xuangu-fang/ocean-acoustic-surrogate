@@ -37,6 +37,25 @@ def split_metrics(reference: np.ndarray, prediction: np.ndarray, mask: np.ndarra
     return {"aggregate": aggregate, "per_sample": per_sample}
 
 
+def stratified_metrics(
+    reference: np.ndarray,
+    prediction: np.ndarray,
+    mask: np.ndarray,
+    groups: np.ndarray,
+) -> dict[str, dict[str, float]]:
+    """Return aggregate TL metrics for every non-empty sample-level group."""
+    groups = np.asarray(groups).astype(str)
+    if len(groups) != len(reference):
+        raise ValueError("groups must contain one label per sample")
+    result = {}
+    for group in np.unique(groups):
+        selected = groups == group
+        result[str(group)] = split_metrics(
+            reference[selected], prediction[selected], mask[selected]
+        )["aggregate"]
+    return result
+
+
 def high_gradient_mask(
     reference: np.ndarray, valid: np.ndarray, quantile: float = 0.9
 ) -> np.ndarray:

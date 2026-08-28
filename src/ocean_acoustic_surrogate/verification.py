@@ -50,7 +50,11 @@ def verify_run(
         interpolate_ssp(ssp_depths, profiles, depths),
         ranges,
         use_hankel=bool(checkpoint["model_config"].get("use_hankel_feature", False)),
-        bathymetry_depths_m=bathymetry,
+        bathymetry_depths_m=(
+            bathymetry
+            if bool(checkpoint["model_config"].get("use_bathymetry_feature", True))
+            else None
+        ),
     )
     transform = TargetTransform.from_state_dict(checkpoint["target_transform"])
     model = build_model(checkpoint["model_config"], int(checkpoint["in_channels"]))

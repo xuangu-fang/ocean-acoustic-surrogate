@@ -1,0 +1,82 @@
+training_defaults:
+  seed: 20260828
+  batch_size: 16
+  max_epochs: 260
+  early_stopping_patience: 45
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  scheduler: cosine
+  target_normalization: field_mean
+
+experiments:
+  - id: seabar_a0_ssp_only
+    hypothesis: Removing bathymetry quantifies the contribution of dual-environment encoding.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      use_bathymetry_feature: false
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: seabar_a1_isotropic_spectrum
+    hypothesis: Isotropic truncation tests the value of extra range-direction modes.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 16
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      use_bathymetry_feature: true
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: seabar_a2_no_boundary_padding
+    hypothesis: Removing replicate padding tests non-periodic boundary protection.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 0
+      padding_range: 0
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      use_bathymetry_feature: true
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: seabar_fno
+    hypothesis: Seasonal bathymetry-aware encoding and anisotropic boundary-safe spectral blocks recover the expanded field family.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      use_bathymetry_feature: true
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0

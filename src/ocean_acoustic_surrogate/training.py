@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from .config import MVPConfig
 from .features import TargetTransform, build_features, interpolate_ssp
-from .metrics import high_gradient_mask, split_metrics, tl_metrics
+from .metrics import high_gradient_mask, split_metrics, stratified_metrics, tl_metrics
 from .models import build_model
 
 
@@ -156,12 +156,21 @@ def run_experiment(
             if "bathymetry_profiles" in raw
             else np.full(len(targets_db), "flat")
         )
+        ssp_groups = (
+            raw["ssp_profiles"].astype(str)
+            if "ssp_profiles" in raw
+            else np.full(len(targets_db), "base")
+        )
     grid_profiles = interpolate_ssp(ssp_depths, ssp_profiles, depths)
     features_np = build_features(
         grid_profiles,
         ranges,
         use_hankel=bool(experiment["model"].get("use_hankel_feature", False)),
-        bathymetry_depths_m=bathymetry,
+        bathymetry_depths_m=(
+            bathymetry
+            if bool(experiment["model"].get("use_bathymetry_feature", True))
+            else None
+        ),
     )
     indices = {split: np.flatnonzero(splits == split) for split in ("train", "validation", "test")}
     train_index = indices["train"]
@@ -313,6 +322,27 @@ def run_experiment(
         split_result["high_gradient"] = tl_metrics(
             targets_db[split_index], prediction_db[split_index], difficult
         )
+        split_result["by_terrain"] = stratified_metrics(
+            targets_db[split_index],
+            prediction_db[split_index],
+            masks[split_index],
+            terrain_groups[split_index],
+        )
+        split_result["by_ssp_profile"] = stratified_metrics(
+            targets_db[split_index],
+            prediction_db[split_index],
+            masks[split_index],
+            ssp_groups[split_index],
+        )
+        environment_groups = np.char.add(
+            np.char.add(terrain_groups[split_index], "::"), ssp_groups[split_index]
+        )
+        split_result["by_environment_group"] = stratified_metrics(
+            targets_db[split_index],
+            prediction_db[split_index],
+            masks[split_index],
+            environment_groups,
+        )
         metrics[split] = split_result
 
     mean_baseline = np.broadcast_to(transform.mean_field_db, targets_db.shape)
@@ -429,6 +459,7 @@ def run_experiment(
         ssp_speeds_mps=ssp_profiles,
         ssp_depths_m=ssp_depths,
         bathymetry_profiles=terrain_groups,
+        ssp_profiles=ssp_groups,
         **({"bathymetry_depths_m": bathymetry} if bathymetry is not None else {}),
     )
     (run_dir / "history.json").write_text(json.dumps(history, indent=2) + "\n")

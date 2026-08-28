@@ -41,6 +41,11 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
             if "bathymetry_profiles" in raw
             else np.full(len(tl), "flat")
         )
+        ssp_groups = (
+            raw["ssp_profiles"].astype(str)
+            if "ssp_profiles" in raw
+            else np.full(len(tl), "base")
+        )
     train = np.flatnonzero(splits == "train")
     test = np.flatnonzero(splits == "test")
     counts = valid[train].sum(axis=0)
@@ -86,6 +91,27 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
                 for split in ("train", "validation", "test")
             }
             for group in np.unique(terrain_groups)
+        },
+        "ssp_profile_counts": {
+            group: {
+                split: int(np.sum((ssp_groups == group) & (splits == split)))
+                for split in ("train", "validation", "test")
+            }
+            for group in np.unique(ssp_groups)
+        },
+        "environment_group_counts": {
+            f"{terrain}::{ssp}": {
+                split: int(
+                    np.sum(
+                        (terrain_groups == terrain)
+                        & (ssp_groups == ssp)
+                        & (splits == split)
+                    )
+                )
+                for split in ("train", "validation", "test")
+            }
+            for terrain in np.unique(terrain_groups)
+            for ssp in np.unique(ssp_groups)
         },
     }
     output = project_root() / "docs/results/dataset_summary.json"

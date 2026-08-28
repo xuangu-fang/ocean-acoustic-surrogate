@@ -1,0 +1,39 @@
+{
+  "source": {
+    "dataset": "WOA23 decadal 0.25-degree monthly climatology",
+    "processed_file": "/mnt/data/xuangu-fang/ocean-acoustics/shared/processed/bashi_phase1_v0.1/monthly_environment.nc",
+    "processed_file_sha256": "38e548acc493dba35580735248581b4dced886b5c18aee2c5c5437d92d56db16",
+    "cell": {
+      "latitude_deg_n": 20.625,
+      "longitude_deg_e": 121.625
+    },
+    "deep_fill": "WOA23 annual climatology below monthly coverage"
+  },
+  "selection": {
+    "method": "exhaustive three-medoid search on monthly sound-speed profiles",
+    "comparison_grid_m": {
+      "start": 0.0,
+      "end": 2000.0,
+      "spacing": 10.0
+    },
+    "distance": "unweighted depth-grid RMSE in m/s",
+    "unconstrained_best_months": [3, 7, 11],
+    "unconstrained_mean_nearest_rmse_mps": 0.3855184030156667,
+    "june_constrained_best_months": [3, 6, 12],
+    "june_constrained_mean_nearest_rmse_mps": 0.3974336628252623,
+    "june_constrained_worst_nearest_rmse_mps": 0.6630734704650044,
+    "relative_objective_penalty_percent": 3.090709949641255,
+    "selected_months": [3, 6, 12],
+    "selection_reason": "retain the frozen June physical anchor while losing only about 3.1 percent in the three-medoid representation objective"
+  },
+  "dataset_design": {
+    "terrain_profiles": 4,
+    "representative_months": 3,
+    "ssp_variants_per_terrain_month": 32,
+    "total_fields": 384,
+    "train_validation_test": [288, 48, 48],
+    "high_fidelity_rays_per_field": 25600,
+    "pilot_prefix_fields": 96,
+    "design_block_size": 96
+  }
+}

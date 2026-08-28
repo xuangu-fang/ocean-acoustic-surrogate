@@ -5,11 +5,11 @@ project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 agent_root="${OCEAN_AGENT_ROOT:-$(dirname "${project_root}")/ocean-acoustic-agent}"
 artifact_root="${OCEAN_SURROGATE_ROOT:-/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate}"
 mode="${REPRO_MODE:-check}"
-samples="${REPRO_SAMPLES:-256}"
+samples="${REPRO_SAMPLES:-384}"
 run_dir="${REPRO_RUN_DIR:-}"
-config="${REPRO_CONFIG:-configs/realistic_terrain_mvp.yaml}"
-campaign="${REPRO_CAMPAIGN:-configs/realistic_campaign.yaml}"
-experiment="${REPRO_EXPERIMENT:-real_r2_terrain_fno}"
+config="${REPRO_CONFIG:-configs/realistic_seasonal_terrain_mvp.yaml}"
+campaign="${REPRO_CAMPAIGN:-configs/seasonal_campaign.yaml}"
+experiment="${REPRO_EXPERIMENT:-seabar_fno}"
 reuse_prefix_from="${REPRO_REUSE_PREFIX_FROM:-}"
 
 export OCEAN_SURROGATE_ROOT="${artifact_root}"
@@ -26,10 +26,10 @@ usage() {
     "Optional variables:" \
     "  OCEAN_AGENT_ROOT       sibling ocean-acoustic-agent repository" \
     "  OCEAN_SURROGATE_ROOT   large artifact root" \
-    "  REPRO_CONFIG           task/data config, default configs/realistic_terrain_mvp.yaml" \
-    "  REPRO_CAMPAIGN         experiment config, default configs/realistic_campaign.yaml" \
+    "  REPRO_CONFIG           task/data config, default configs/realistic_seasonal_terrain_mvp.yaml" \
+    "  REPRO_CAMPAIGN         experiment config, default configs/seasonal_campaign.yaml" \
     "  REPRO_EXPERIMENT       experiment id to train" \
-    "  REPRO_SAMPLES          sample count, default 256" \
+    "  REPRO_SAMPLES          sample count, default 384" \
     "  REPRO_REUSE_PREFIX_FROM  optional earlier dataset root with an identical prefix" \
     "  REPRO_RUN_DIR          run directory required by verify mode"
 }

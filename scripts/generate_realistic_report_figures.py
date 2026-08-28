@@ -25,18 +25,23 @@ ARTIFACT_ROOT = Path(
         "/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate",
     )
 )
-CONFIG_PATH = ROOT / "configs/realistic_terrain_mvp.yaml"
+CONFIG_PATH = ROOT / "configs/realistic_seasonal_terrain_mvp.yaml"
 GEBCO_PATH = Path(
     "/mnt/data/xuangu-fang/ocean-acoustics/shared/raw/gebco/GEBCO_2026/"
     "bashi_candidate_v0.1/gebco_2026_n21.578_s19.422_w120.349_e122.651.nc"
 )
-PILOT_DATASET_ID = "bashi_gebco_selected_diverse_woa23_june_v0.5"
+PILOT_DATASET_ID = "bashi_gebco_four_terrain_woa23_m03_m06_m12_v0.7_n384"
 BLUE = "#2f6f9f"
 NAVY = "#153f66"
 TEAL = "#2a8c82"
 GREEN = "#4d8f62"
 ORANGE = "#d9822b"
 RED = "#b04a4a"
+MONTH_LABELS = {
+    "woa23_march": "March",
+    "woa23_june": "June",
+    "woa23_december": "December",
+}
 
 
 def _save(fig: plt.Figure, name: str) -> None:
@@ -48,7 +53,7 @@ def _save(fig: plt.Figure, name: str) -> None:
 
 def _load() -> tuple[MVPConfig, dict[str, np.ndarray], dict, dict, list[dict]]:
     config = MVPConfig.from_yaml(CONFIG_PATH)
-    dataset_path = ARTIFACT_ROOT / "datasets" / config.contract.dataset_id / "n256/dataset.npz"
+    dataset_path = ARTIFACT_ROOT / "datasets" / config.contract.dataset_id / "n384/dataset.npz"
     with np.load(dataset_path) as raw:
         dataset = {key: raw[key].copy() for key in raw.files}
     pilot = json.loads(
@@ -100,9 +105,9 @@ def plot_pipeline() -> None:
     axis.axis("off")
     boxes = [
         (0.02, "Public data", "GEBCO 2026\nWOA23 + TEOS-10", "#e8f1f8"),
-        (0.22, "Controlled domain", "24-azimuth screen\n4 terrain × narrow SSP", "#edf6f4"),
+        (0.22, "Controlled domain", "4 terrain × 3 months\n384 balanced fields", "#edf6f4"),
         (0.42, "Reference labels", "Bellhop incoherent TL\n25,600 rays / field", "#fff3e6"),
-        (0.62, "Residual operator", "Global residual scaling\n+ anisotropic FNO", "#eaf3eb"),
+        (0.62, "SeaBAR-FNO", "dual environment\n+ anisotropic residual operator", "#eaf3eb"),
         (0.82, "Sealed evaluation", "RMSE / MAE\nP95 latency", "#f1edf8"),
     ]
     for x, title, body, color in boxes:
@@ -122,7 +127,7 @@ def plot_method() -> None:
         (0.175, 0.13, "Feature assembly", "normalize + replicate\n[B, 2, 96, 256]", "#edf6f4"),
         (0.335, 0.13, "Coordinates + lift", "append z,r; 1×1 conv\n[B, 32, 96, 256]", "#fff3e6"),
         (0.495, 0.13, "Replicate padding", "depth +8, range +16\n[B, 32, 104, 272]", "#f1edf8"),
-        (0.655, 0.13, "4 FNO blocks", "spectral + local + skip\n[B, 32, 104, 272]", "#eaf3eb"),
+        (0.655, 0.13, "4 SeaBAR blocks", "spectral + local + skip\n[B, 32, 104, 272]", "#eaf3eb"),
         (0.815, 0.17, "Crop + project", "32→128→1\n[B, 1, 96, 256]", "#e8f1f8"),
     ]
     for x, width, title, body, color in top:
@@ -147,7 +152,7 @@ def plot_method() -> None:
     axis.text(
         0.50,
         0.52,
-        "One anisotropic FNO block (H=32, Kz=16, Kr=48); the block output retains the padded spatial shape",
+        "One anisotropic SeaBAR block (H=32, Kz=16, Kr=48); global and local updates retain the padded shape",
         ha="center",
         va="center",
         fontsize=9,
@@ -207,22 +212,30 @@ def plot_environment(config: MVPConfig, data: dict[str, np.ndarray]) -> None:
 
     speeds = data["ssp_speeds_mps"]
     ssp_depths = data["ssp_depths_m"]
-    offsets = data["parameters"][:, 0]
-    selected = np.linspace(0, len(speeds) - 1, 64, dtype=int)
-    normalization = plt.Normalize(float(offsets.min()), float(offsets.max()))
-    for index in selected:
+    ssp_groups = data["ssp_profiles"].astype(str)
+    month_colors = {
+        "woa23_march": BLUE,
+        "woa23_june": ORANGE,
+        "woa23_december": TEAL,
+    }
+    for group in ("woa23_march", "woa23_june", "woa23_december"):
+        indices = np.flatnonzero(ssp_groups == group)
+        selected = indices[np.linspace(0, len(indices) - 1, 24, dtype=int)]
+        for index in selected:
+            axes[1].plot(
+                speeds[index], ssp_depths, color=month_colors[group],
+                alpha=0.12, linewidth=0.75,
+            )
         axes[1].plot(
-            speeds[index], ssp_depths, color=plt.cm.coolwarm(normalization(offsets[index])),
-            alpha=0.22, linewidth=0.85,
+            speeds[indices].mean(0), ssp_depths, color=month_colors[group], linewidth=2.4,
+            label=f"{MONTH_LABELS[group]} mean",
         )
-    axes[1].plot(speeds.mean(0), ssp_depths, color=NAVY, linewidth=2.5,
-                 label="256-field mean")
     axes[1].invert_yaxis()
     axes[1].grid(alpha=0.18)
     axes[1].set(
         xlabel="Sound speed (m/s)",
         ylabel="Depth (m)",
-        title="WOA23 June SSP family",
+        title="Three representative WOA23 monthly SSP families",
     )
     axes[1].legend()
 
@@ -275,19 +288,16 @@ def plot_label_quality(pilot: dict) -> None:
 
 def _run_label(experiment_id: str) -> str:
     labels = {
-        "real_r1_small_terrain_fno": "Global FNO-S",
-        "real_r2_terrain_fno": "Global FNO-L",
-        "real_r5_global_data48": "Global FNO-S (48)",
-        "real_r6_global_data96": "Global FNO-S (96)",
+        "seabar_a0_ssp_only": "SSP only",
+        "seabar_a1_isotropic_spectrum": "Isotropic spectrum",
+        "seabar_a2_no_boundary_padding": "No boundary padding",
+        "seabar_fno": "SeaBAR-FNO",
     }
     return labels.get(experiment_id, experiment_id)
 
 
 def plot_main_results(runs: list[dict]) -> None:
-    main = [run for run in runs if run["metrics"]["experiment_id"] in {
-        "real_r1_small_terrain_fno",
-        "real_r2_terrain_fno",
-    }]
+    main = runs
     baseline = main[0]["metrics"]["mean_field_baseline_test"]["rmse_db"]
     labels = ["Global mean"] + [
         _run_label(run["metrics"]["experiment_id"]) for run in main
@@ -295,7 +305,7 @@ def plot_main_results(runs: list[dict]) -> None:
     values = [baseline] + [
         run["metrics"]["metrics"]["test"]["aggregate"]["rmse_db"] for run in main
     ]
-    colors = ["#9aa5ad"] + [BLUE, NAVY]
+    colors = ["#9aa5ad", "#b7a6c9", TEAL, ORANGE, NAVY]
     fig, axes = plt.subplots(1, 2, figsize=(13.5, 4.8), constrained_layout=True)
     bars = axes[0].bar(labels, values, color=colors)
     axes[0].axhline(2.0, color=RED, linestyle="--", label="2 dB gate")
@@ -307,7 +317,7 @@ def plot_main_results(runs: list[dict]) -> None:
     bars = axes[1].bar(
         [_run_label(run["metrics"]["experiment_id"]) for run in main],
         reductions,
-        color=[BLUE, NAVY],
+        color=["#b7a6c9", TEAL, ORANGE, NAVY],
     )
     axes[1].set(ylabel="RMSE reduction vs global mean (%)", title="Relative improvement")
     axes[1].tick_params(axis="x", rotation=24)
@@ -316,47 +326,37 @@ def plot_main_results(runs: list[dict]) -> None:
     _save(fig, "fig05_main_results")
 
 
-def plot_data_ablation(runs: list[dict]) -> None:
-    wanted = {
-        "real_r5_global_data48",
-        "real_r6_global_data96",
-        "real_r1_small_terrain_fno",
-    }
-    points = []
-    for run in runs:
-        experiment = run["metrics"]["experiment_id"]
-        if experiment in wanted:
-            points.append(
-                (
-                    int(run["metrics"]["effective_train_samples"]),
-                    run["metrics"]["metrics"]["test"]["aggregate"]["rmse_db"],
-                    run["metrics"]["metrics"]["test"]["aggregate"]["p90_sample_rmse_db"],
-                )
-            )
-    points.sort()
-    fig, axis = plt.subplots(figsize=(7.2, 4.6), constrained_layout=True)
-    x = [item[0] for item in points]
-    y = [item[1] for item in points]
-    p90 = [item[2] for item in points]
-    axis.plot(x, y, marker="o", linewidth=2.2, color=BLUE, label="Aggregate RMSE")
-    axis.plot(x, p90, marker="s", linewidth=1.8, color=ORANGE, label="P90 sample RMSE")
-    axis.axhline(2.0, color=RED, linestyle="--", label="2 dB gate")
-    axis.set(
-        xlabel="Effective training fields",
-        ylabel="Held-out test RMSE (dB)",
-        title="Data-size ablation on the same sealed test set",
-        xticks=x,
+def plot_stratified_results(campaign: dict) -> None:
+    metrics = json.loads((Path(campaign["best"]["run_dir"]) / "metrics.json").read_text())
+    month = metrics["metrics"]["test"]["by_ssp_profile"]
+    terrain = metrics["metrics"]["test"]["by_terrain"]
+    fig, axes = plt.subplots(1, 2, figsize=(12.8, 4.6), constrained_layout=True)
+    month_order = ["woa23_march", "woa23_june", "woa23_december"]
+    bars = axes[0].bar(
+        ["March", "June", "December"],
+        [month[key]["rmse_db"] for key in month_order],
+        color=[BLUE, ORANGE, TEAL],
     )
-    axis.grid(alpha=0.18)
-    axis.legend()
-    _save(fig, "fig06_data_size_ablation")
+    axes[0].bar_label(bars, fmt="%.3f")
+    axes[0].set(ylabel="Held-out RMSE (dB)", title="Performance by WOA23 month")
+    terrain_order = sorted(terrain)
+    bars = axes[1].bar(
+        [key.replace("gebco_az", "az").replace("_screened", "°") for key in terrain_order],
+        [terrain[key]["rmse_db"] for key in terrain_order],
+        color=[BLUE, ORANGE, GREEN, RED],
+    )
+    axes[1].bar_label(bars, fmt="%.3f")
+    axes[1].set(ylabel="Held-out RMSE (dB)", title="Performance by GEBCO terrain")
+    for axis in axes:
+        axis.axhline(2.0, color=RED, linestyle="--", label="2 dB gate")
+        axis.set_ylim(0, 2.1)
+        axis.grid(axis="y", alpha=0.18)
+        axis.legend()
+    _save(fig, "fig06_stratified_results")
 
 
 def plot_training(runs: list[dict]) -> None:
-    main = [run for run in runs if run["metrics"]["experiment_id"] in {
-        "real_r1_small_terrain_fno",
-        "real_r2_terrain_fno",
-    }]
+    main = runs
     fig, axis = plt.subplots(figsize=(8.2, 4.8), constrained_layout=True)
     for run in main:
         history = run["history"]
@@ -366,6 +366,7 @@ def plot_training(runs: list[dict]) -> None:
             label=_run_label(run["metrics"]["experiment_id"]),
         )
     axis.axhline(2.0, color=RED, linestyle="--", label="2 dB gate")
+    axis.set_yscale("log")
     axis.set(xlabel="Epoch", ylabel="Validation RMSE (dB)", title="Validation trajectories")
     axis.grid(alpha=0.18)
     axis.legend(ncol=2, fontsize=8)
@@ -384,6 +385,7 @@ def plot_prediction_analysis(campaign: dict) -> None:
         depths = raw["depths_m"]
         ssp = raw["ssp_speeds_mps"]
         ssp_depths = raw["ssp_depths_m"]
+        ssp_groups = raw["ssp_profiles"].astype(str)
     test = np.flatnonzero(splits == "test")
     sample_rmse = np.asarray(
         [np.sqrt(np.mean((prediction[i][valid[i]] - reference[i][valid[i]]) ** 2)) for i in test]
@@ -399,7 +401,9 @@ def plot_prediction_analysis(campaign: dict) -> None:
         axis.plot(ssp[index], ssp_depths, color=BLUE)
         axis.set(xlabel="Sound speed (m/s)", ylabel="Depth (m)")
         axis.invert_yaxis()
-        axis.set_title(f"{sample_ids[index]} environment")
+        axis.set_title(
+            f"{sample_ids[index]} | {MONTH_LABELS.get(ssp_groups[index], ssp_groups[index])}"
+        )
         for column, (field, title, cmap, low, high) in enumerate(
             (
                 (reference[index], "Bellhop reference", "viridis", tl_min, tl_max),
@@ -446,16 +450,13 @@ def plot_prediction_analysis(campaign: dict) -> None:
 
 
 def plot_latency(runs: list[dict], pilot: dict) -> None:
-    main = [run for run in runs if run["metrics"]["experiment_id"] in {
-        "real_r1_small_terrain_fno",
-        "real_r2_terrain_fno",
-    }]
+    main = [run for run in runs if run["metrics"]["experiment_id"] != "seabar_a0_ssp_only"]
     labels = [_run_label(run["metrics"]["experiment_id"]) for run in main] + ["Bellhop 25.6k"]
     values = [run["metrics"]["latency"]["gpu"]["p95_ms"] for run in main] + [
         pilot["timing_seconds"]["25600"]["median"] * 1000.0
     ]
     fig, axis = plt.subplots(figsize=(8.4, 4.8), constrained_layout=True)
-    bars = axis.bar(labels, values, color=[BLUE, NAVY, "#9aa5ad"])
+    bars = axis.bar(labels, values, color=[TEAL, ORANGE, NAVY, "#9aa5ad"])
     axis.axhline(100.0, color=RED, linestyle="--", label="100 ms gate")
     axis.set_yscale("log")
     axis.set(ylabel="Batch=1 wall time (ms, log scale)", title="Surrogate latency vs reference solver")
@@ -472,7 +473,7 @@ def main() -> None:
     plot_label_quality(pilot)
     plot_method()
     plot_main_results(runs)
-    plot_data_ablation(runs)
+    plot_stratified_results(campaign)
     plot_training(runs)
     plot_prediction_analysis(campaign)
     plot_latency(runs, pilot)

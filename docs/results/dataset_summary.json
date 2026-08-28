@@ -1,80 +1,159 @@
 {
   "dataset_id": "bashi_gebco_four_terrain_woa23_m03_m06_m12_v0.7_n384",
-  "dataset_path": "/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate/datasets/bashi_gebco_four_terrain_woa23_m03_m06_m12_v0.7_n384/n96/dataset.npz",
-  "dataset_sha256": "c4ddaa14213d565aad025885648b41d5b7c2eac222a828b517622df9bcb61548",
-  "n_samples": 96,
+  "dataset_path": "/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate/datasets/bashi_gebco_four_terrain_woa23_m03_m06_m12_v0.7_n384/n384/dataset.npz",
+  "dataset_sha256": "9c90e051851e24082816b435bc529250f64d8a61c8a8f603916071eb0fda0a61",
+  "n_samples": 384,
   "split_counts": {
-    "train": 72,
-    "validation": 12,
-    "test": 12
+    "train": 288,
+    "validation": 48,
+    "test": 48
   },
   "field_shape": [
     96,
     256
   ],
-  "finite_coverage": 0.9987530178493923,
+  "finite_coverage": 0.9987494150797526,
   "bellhop_wall_seconds": {
-    "total": 815.8037905124947,
-    "median": 8.017853347584605,
-    "p95": 12.492759669199586
+    "total": 3239.256559692323,
+    "median": 8.0960792619735,
+    "p95": 12.573367340676487
   },
-  "dataset_size_bytes": 7797558,
+  "dataset_size_bytes": 31165949,
   "parameter_ranges": {
     "global_offset_mps": {
-      "minimum": -0.5452945232391357,
+      "minimum": -0.5497148036956787,
       "maximum": 0.5465390086174011
     },
     "thermocline_amplitude_mps": {
-      "minimum": -0.793065071105957,
-      "maximum": 0.7941081523895264
+      "minimum": -0.7983888983726501,
+      "maximum": 0.7992567420005798
     },
     "axis_shift_m": {
-      "minimum": -34.51875305175781,
-      "maximum": 34.62316131591797
+      "minimum": -34.85395050048828,
+      "maximum": 34.84456253051758
     },
     "deep_gradient_mps": {
       "minimum": -0.5497439503669739,
-      "maximum": 0.5400750041007996
+      "maximum": 0.5430412292480469
     }
   },
   "tl_db": {
-    "minimum": 37.95820236206055,
-    "maximum": 153.61814880371094,
-    "mean": 83.30864715576172,
-    "standard_deviation": 9.86613941192627
+    "minimum": 37.95789337158203,
+    "maximum": 156.14596557617188,
+    "mean": 83.31696319580078,
+    "standard_deviation": 9.881155014038086
   },
   "training_mean_field_baseline_test": {
-    "rmse_db": 4.890153538527392,
-    "mae_db": 3.370716599676366,
-    "bias_db": 0.02505635172184831,
-    "p95_absolute_error_db": 9.926504516601547,
-    "maximum_absolute_error_db": 51.52519989013672,
-    "cell_count": 294553,
-    "macro_mean_rmse_db": 4.800713732764878,
-    "median_sample_rmse_db": 4.536599514585708,
-    "p90_sample_rmse_db": 6.377276153711383,
-    "worst_sample_rmse_db": 6.716139510632112
+    "rmse_db": 4.9539135632486575,
+    "mae_db": 3.3888880837663042,
+    "bias_db": 0.014641145498787698,
+    "p95_absolute_error_db": 10.014270782470692,
+    "maximum_absolute_error_db": 54.23918914794922,
+    "cell_count": 1178204,
+    "macro_mean_rmse_db": 4.8685722813265935,
+    "median_sample_rmse_db": 4.5672024262667,
+    "p90_sample_rmse_db": 6.441623982803259,
+    "worst_sample_rmse_db": 7.0610960721463405
   },
   "terrain_profile_counts": {
     "gebco_az030_screened": {
-      "train": 18,
-      "validation": 3,
-      "test": 3
+      "train": 72,
+      "validation": 12,
+      "test": 12
     },
     "gebco_az090_screened": {
-      "train": 18,
-      "validation": 3,
-      "test": 3
+      "train": 72,
+      "validation": 12,
+      "test": 12
     },
     "gebco_az210_screened": {
-      "train": 18,
-      "validation": 3,
-      "test": 3
+      "train": 72,
+      "validation": 12,
+      "test": 12
     },
     "gebco_az225_screened": {
-      "train": 18,
-      "validation": 3,
-      "test": 3
+      "train": 72,
+      "validation": 12,
+      "test": 12
+    }
+  },
+  "ssp_profile_counts": {
+    "woa23_december": {
+      "train": 96,
+      "validation": 16,
+      "test": 16
+    },
+    "woa23_june": {
+      "train": 96,
+      "validation": 16,
+      "test": 16
+    },
+    "woa23_march": {
+      "train": 96,
+      "validation": 16,
+      "test": 16
+    }
+  },
+  "environment_group_counts": {
+    "gebco_az030_screened::woa23_december": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az030_screened::woa23_june": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az030_screened::woa23_march": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az090_screened::woa23_december": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az090_screened::woa23_june": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az090_screened::woa23_march": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az210_screened::woa23_december": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az210_screened::woa23_june": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az210_screened::woa23_march": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az225_screened::woa23_december": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az225_screened::woa23_june": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
+    },
+    "gebco_az225_screened::woa23_march": {
+      "train": 24,
+      "validation": 4,
+      "test": 4
     }
   }
 }

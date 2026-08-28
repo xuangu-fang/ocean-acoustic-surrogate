@@ -110,6 +110,7 @@ class SSPFamilyConfig(BaseModel):
     channel_axis_shift_m: tuple[float, float]
     deep_gradient_mps: tuple[float, float]
     interpolation_points: int = 33
+    design_block_size: int | None = None
     profiles: list[SSPTemplateConfig] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -123,6 +124,8 @@ class SSPFamilyConfig(BaseModel):
             raise ValueError("SSP profile names must be unique")
         if any(len(profile.speeds_mps) != len(self.depths_m) for profile in self.profiles):
             raise ValueError("every SSP profile must use the family depth grid")
+        if self.design_block_size is not None and self.design_block_size <= 0:
+            raise ValueError("design_block_size must be positive when provided")
         return self
 
 

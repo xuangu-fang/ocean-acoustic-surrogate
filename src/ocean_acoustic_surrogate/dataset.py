@@ -7,6 +7,7 @@ import itertools
 import json
 import os
 import platform
+import shutil
 import subprocess
 import time
 from datetime import UTC, datetime
@@ -268,7 +269,76 @@ def run_pilot(config: MVPConfig, n_samples: int = 8) -> Path:
     return path
 
 
-def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
+def _reuse_prefix_labels(
+    config: MVPConfig,
+    records: list[SSPRecord],
+    splits: np.ndarray,
+    target_samples_root: Path,
+    source_root: Path,
+) -> int:
+    """Reuse a numerically identical prefix from a previously frozen dataset."""
+    if source_root.name == "dataset.npz":
+        source_root = source_root.parent
+    source_samples_root = source_root / "samples"
+    if not source_samples_root.is_dir():
+        raise FileNotFoundError(f"reuse source has no samples directory: {source_samples_root}")
+
+    reused = 0
+    for index, record in enumerate(records):
+        source_sample = source_samples_root / record.sample_id
+        source_array = source_sample / "sample.npz"
+        source_metadata = source_sample / "metadata.json"
+        if not source_array.exists() or not source_metadata.exists():
+            continue
+        target_sample = target_samples_root / record.sample_id
+        target_array = target_sample / "sample.npz"
+        target_metadata = target_sample / "metadata.json"
+        if target_array.exists() and target_metadata.exists():
+            continue
+
+        metadata = json.loads(source_metadata.read_text())
+        selected_bathymetry = _bathymetry_for_record(config, record)
+        expected_terrain = selected_bathymetry.name if selected_bathymetry is not None else "flat"
+        with np.load(source_array) as raw:
+            if not np.array_equal(raw["parameters"], record.parameters):
+                raise ValueError(
+                    f"reuse prefix parameters differ for {record.sample_id}; refusing stale label"
+                )
+            if not np.array_equal(raw["ssp_speeds_mps"], record.speeds_mps):
+                raise ValueError(
+                    f"reuse prefix SSP differs for {record.sample_id}; refusing stale label"
+                )
+        if metadata.get("bathymetry_profile") != expected_terrain:
+            raise ValueError(
+                f"reuse prefix terrain differs for {record.sample_id}; refusing stale label"
+            )
+        if int(metadata.get("num_rays", -1)) != config.contract.reference_num_rays:
+            raise ValueError(
+                f"reuse prefix ray count differs for {record.sample_id}; refusing stale label"
+            )
+
+        target_sample.mkdir(parents=True, exist_ok=True)
+        try:
+            os.link(source_array, target_array)
+        except OSError:
+            shutil.copy2(source_array, target_array)
+        metadata.update(
+            {
+                "split": str(splits[index]),
+                "config_hash": config.config_hash,
+                "reused_from": str(source_sample),
+            }
+        )
+        target_metadata.write_text(json.dumps(metadata, indent=2) + "\n")
+        reused += 1
+    return reused
+
+
+def generate_dataset(
+    config: MVPConfig,
+    n_samples: int,
+    reuse_prefix_from: Path | None = None,
+) -> Path:
     """Generate or resume a high-quality Bellhop dataset and package it."""
     root = config.dataset_root / f"n{n_samples}"
     samples_root = root / "samples"
@@ -285,6 +355,16 @@ def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
         template_cycle_stride=terrain_count,
     )
     splits = _dataset_splits(config, n_samples)
+    reused_count = 0
+    if reuse_prefix_from is not None:
+        reused_count = _reuse_prefix_labels(
+            config,
+            records,
+            splits,
+            samples_root,
+            reuse_prefix_from,
+        )
+        print(f"reused {reused_count}/{n_samples} frozen prefix labels", flush=True)
     failures = []
     for index, (record, split) in enumerate(zip(records, splits)):
         sample_dir = samples_root / record.sample_id
@@ -416,6 +496,15 @@ def generate_dataset(config: MVPConfig, n_samples: int) -> Path:
         "finite_coverage": float(
             np.mean([record["finite_coverage"] for record in metadata_records])
         ),
+        "label_provenance": {
+            "reused_prefix_count": int(
+                sum("reused_from" in record for record in metadata_records)
+            ),
+            "generated_in_dataset_count": int(
+                sum("reused_from" not in record for record in metadata_records)
+            ),
+            "reuse_source": str(reuse_prefix_from) if reuse_prefix_from is not None else None,
+        },
         "failures": failures,
     }
     (root / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")

@@ -18,6 +18,12 @@ def _parser() -> argparse.ArgumentParser:
     generate = subparsers.add_parser("generate", help="generate or resume the Bellhop dataset")
     generate.add_argument("config", type=Path)
     generate.add_argument("--samples", type=int, default=512)
+    generate.add_argument(
+        "--reuse-prefix-from",
+        type=Path,
+        default=None,
+        help="reuse an identical frozen sample prefix from an earlier dataset root",
+    )
     campaign = subparsers.add_parser("campaign", help="train every registered experiment")
     campaign.add_argument("config", type=Path)
     campaign.add_argument("campaign", type=Path)
@@ -45,7 +51,7 @@ def main() -> None:
     if args.command == "generate":
         from .dataset import generate_dataset
 
-        print(generate_dataset(config, args.samples))
+        print(generate_dataset(config, args.samples, args.reuse_prefix_from))
         return
     if args.command == "verify":
         from .verification import verify_run

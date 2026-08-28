@@ -51,18 +51,6 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
         where=counts > 0,
     )
     baseline = np.broadcast_to(mean_field, tl[test].shape)
-    terrain_baseline = np.empty_like(tl[test])
-    for group in np.unique(terrain_groups):
-        group_train = train[terrain_groups[train] == group]
-        group_test = np.flatnonzero(terrain_groups[test] == group)
-        group_count = valid[group_train].sum(axis=0)
-        group_mean = np.divide(
-            np.where(valid[group_train], tl[group_train], 0.0).sum(axis=0),
-            group_count,
-            out=np.zeros_like(tl[0]),
-            where=group_count > 0,
-        )
-        terrain_baseline[group_test] = group_mean
     parameter_names = [
         "global_offset_mps",
         "thermocline_amplitude_mps",
@@ -91,9 +79,6 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
         },
         "training_mean_field_baseline_test": split_metrics(
             tl[test], baseline, valid[test]
-        )["aggregate"],
-        "training_terrain_mean_field_baseline_test": split_metrics(
-            tl[test], terrain_baseline, valid[test]
         )["aggregate"],
         "terrain_profile_counts": {
             group: {
@@ -264,11 +249,6 @@ def write_campaign_summary(run_dirs: list[Path], output_json: Path) -> dict:
                 "mean_field_baseline_test_rmse_db": metrics["mean_field_baseline_test"][
                     "rmse_db"
                 ],
-                "terrain_mean_baseline_test_rmse_db": (
-                    metrics["terrain_mean_baseline_test"]["rmse_db"]
-                    if metrics["terrain_mean_baseline_test"] is not None
-                    else None
-                ),
                 "baseline_improvement_rmse_db": metrics["baseline_improvement_rmse_db"],
                 "baseline_rmse_reduction_percent": metrics[
                     "baseline_rmse_reduction_percent"

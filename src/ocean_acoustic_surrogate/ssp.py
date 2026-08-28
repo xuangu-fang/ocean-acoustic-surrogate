@@ -45,6 +45,27 @@ def latin_hypercube_parameters(config: SSPFamilyConfig, n_samples: int, seed: in
     return qmc.scale(unit, bounds[:, 0], bounds[:, 1]).astype(np.float32)
 
 
+def nested_latin_hypercube_parameters(
+    config: SSPFamilyConfig, n_samples: int, seed: int
+) -> np.ndarray:
+    """Build a deterministic block-nested design so frozen labels remain reusable.
+
+    Each complete block is an independent Latin hypercube.  Consequently the
+    first ``design_block_size`` records are byte-for-byte stable when a dataset
+    grows from one block to two blocks.
+    """
+    block_size = config.design_block_size
+    if block_size is None or n_samples <= block_size:
+        return latin_hypercube_parameters(config, n_samples, seed)
+    blocks = []
+    for block_index, start in enumerate(range(0, n_samples, block_size)):
+        count = min(block_size, n_samples - start)
+        blocks.append(
+            latin_hypercube_parameters(config, count, seed + block_index * 104_729)
+        )
+    return np.concatenate(blocks, axis=0)
+
+
 def profile_from_parameters(
     config: SSPFamilyConfig,
     parameters: np.ndarray,
@@ -77,7 +98,7 @@ def build_ssp_records(
     seed: int,
     template_cycle_stride: int = 1,
 ) -> list[SSPRecord]:
-    parameters = latin_hypercube_parameters(config, n_samples, seed)
+    parameters = nested_latin_hypercube_parameters(config, n_samples, seed)
     records = []
     for index, values in enumerate(parameters):
         profile = (

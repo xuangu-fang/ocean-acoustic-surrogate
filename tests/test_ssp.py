@@ -18,3 +18,17 @@ def test_split_counts_cover_all_samples():
     assert (splits == "train").sum() == 384
     assert (splits == "validation").sum() == 64
     assert (splits == "test").sum() == 64
+
+
+def test_nested_design_preserves_frozen_128_sample_prefix():
+    config = MVPConfig.from_yaml("configs/realistic_terrain_mvp.yaml")
+    original = build_ssp_records(config.ssp_family, 128, config.contract.seed)
+    extended = build_ssp_records(config.ssp_family, 256, config.contract.seed)
+    assert [record.sample_id for record in original] == [
+        record.sample_id for record in extended[:128]
+    ]
+    assert all(
+        np.array_equal(left.parameters, right.parameters)
+        and np.array_equal(left.speeds_mps, right.speeds_mps)
+        for left, right in zip(original, extended[:128])
+    )

@@ -321,19 +321,6 @@ def run_experiment(
         mean_baseline[indices["test"]],
         masks[indices["test"]],
     )["aggregate"]
-    terrain_baseline_test = None
-    if np.any(terrain_groups != "flat"):
-        terrain_transform = TargetTransform.fit_grouped(
-            targets_db[train_index],
-            masks[train_index],
-            terrain_groups[train_index],
-        )
-        terrain_mean = terrain_transform._means(terrain_groups)
-        terrain_baseline_test = split_metrics(
-            targets_db[indices["test"]],
-            terrain_mean[indices["test"]],
-            masks[indices["test"]],
-        )["aggregate"]
     latency = {
         "gpu": _benchmark_latency(
             model,
@@ -405,7 +392,6 @@ def run_experiment(
             "name": target_transform_name,
         },
         "mean_field_baseline_test": baseline_test,
-        "terrain_mean_baseline_test": terrain_baseline_test,
         "baseline_improvement_rmse_db": baseline_test["rmse_db"] - test_metric["rmse_db"],
         "baseline_rmse_reduction_percent": 100.0
         * (baseline_test["rmse_db"] - test_metric["rmse_db"])

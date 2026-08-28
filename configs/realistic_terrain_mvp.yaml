@@ -1,5 +1,5 @@
 contract:
-  dataset_id: bashi_gebco_selected_diverse_woa23_june_v0.5
+  dataset_id: bashi_gebco_selected_diverse_woa23_june_v0.6_n256
   seed: 20260828
   frequency_hz: 1000.0
   source_depth_m: 50.0
@@ -52,6 +52,7 @@ ssp_family:
   channel_axis_shift_m: [-25.0, 25.0]
   deep_gradient_mps: [-0.4, 0.4]
   interpolation_points: 41
+  design_block_size: 128
 
 split:
   train_fraction: 0.75

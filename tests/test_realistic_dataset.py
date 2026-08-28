@@ -17,6 +17,18 @@ def test_realistic_splits_are_balanced_by_terrain_template():
         }
 
 
+def test_extended_realistic_splits_are_balanced_by_terrain_template():
+    config = MVPConfig.from_yaml("configs/realistic_terrain_mvp.yaml")
+    splits = _dataset_splits(config, 256)
+    for profile_index in range(4):
+        local = splits[np.arange(profile_index, 256, 4)]
+        assert dict(zip(*np.unique(local, return_counts=True))) == {
+            "test": 8,
+            "train": 48,
+            "validation": 8,
+        }
+
+
 def test_seasonal_splits_cover_every_terrain_month_pair():
     config = MVPConfig.from_yaml("configs/realistic_seasonal_mvp.yaml")
     splits = _dataset_splits(config, 128)

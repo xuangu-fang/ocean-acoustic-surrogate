@@ -13,6 +13,7 @@ import numpy as np
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+from scipy.io import netcdf_file
 
 from ocean_acoustic_surrogate.config import MVPConfig
 
@@ -25,6 +26,11 @@ ARTIFACT_ROOT = Path(
     )
 )
 CONFIG_PATH = ROOT / "configs/realistic_terrain_mvp.yaml"
+GEBCO_PATH = Path(
+    "/mnt/data/xuangu-fang/ocean-acoustics/shared/raw/gebco/GEBCO_2026/"
+    "bashi_candidate_v0.1/gebco_2026_n21.578_s19.422_w120.349_e122.651.nc"
+)
+PILOT_DATASET_ID = "bashi_gebco_selected_diverse_woa23_june_v0.5"
 BLUE = "#2f6f9f"
 NAVY = "#153f66"
 TEAL = "#2a8c82"
@@ -42,14 +48,14 @@ def _save(fig: plt.Figure, name: str) -> None:
 
 def _load() -> tuple[MVPConfig, dict[str, np.ndarray], dict, dict, list[dict]]:
     config = MVPConfig.from_yaml(CONFIG_PATH)
-    dataset_path = ARTIFACT_ROOT / "datasets" / config.contract.dataset_id / "n128/dataset.npz"
+    dataset_path = ARTIFACT_ROOT / "datasets" / config.contract.dataset_id / "n256/dataset.npz"
     with np.load(dataset_path) as raw:
         dataset = {key: raw[key].copy() for key in raw.files}
     pilot = json.loads(
         (
             ARTIFACT_ROOT
             / "datasets"
-            / config.contract.dataset_id
+            / PILOT_DATASET_ID
             / "pilot/convergence_report.json"
         ).read_text()
     )
@@ -126,37 +132,83 @@ def plot_method() -> None:
 
 
 def plot_environment(config: MVPConfig, data: dict[str, np.ndarray]) -> None:
-    fig, axes = plt.subplots(1, 2, figsize=(12.8, 4.8), constrained_layout=True)
+    fig, axes = plt.subplots(1, 3, figsize=(17.4, 4.9), constrained_layout=True)
+    with netcdf_file(GEBCO_PATH, "r", mmap=False) as raw:
+        longitude = np.asarray(raw.variables["lon"].data).copy()
+        latitude = np.asarray(raw.variables["lat"].data).copy()
+        elevation = np.asarray(raw.variables["elevation"].data, dtype=np.float32).copy()
+    ocean = np.ma.masked_where(elevation >= 0, elevation / 1000.0)
+    image = axes[0].contourf(
+        longitude,
+        latitude,
+        ocean,
+        levels=np.linspace(-5.0, 0.0, 21),
+        cmap="Blues_r",
+        extend="min",
+    )
+    axes[0].contour(longitude, latitude, elevation, levels=[0], colors="#4d5548", linewidths=0.8)
+    center_lon, center_lat = 121.5, 20.5
+    axes[0].scatter(center_lon, center_lat, marker="*", s=130, color=ORANGE,
+                    edgecolor="white", linewidth=0.8, zorder=5, label="modeling origin")
+    for azimuth in (30, 90, 210, 225):
+        angle = np.deg2rad(azimuth)
+        dlat = 50.0 * np.cos(angle) / 111.0
+        dlon = 50.0 * np.sin(angle) / (111.0 * np.cos(np.deg2rad(center_lat)))
+        axes[0].annotate(
+            "",
+            xy=(center_lon + dlon, center_lat + dlat),
+            xytext=(center_lon, center_lat),
+            arrowprops={"arrowstyle": "-|>", "color": RED, "lw": 1.2, "alpha": 0.85},
+        )
+    axes[0].text(120.42, 21.46, "Taiwan side", color=NAVY, fontsize=8)
+    axes[0].text(122.06, 19.52, "Luzon side", color=NAVY, fontsize=8)
+    axes[0].set(
+        xlabel="Longitude (°E)", ylabel="Latitude (°N)",
+        title="Bashi Channel location and four 50 km directions",
+    )
+    axes[0].grid(alpha=0.16)
+    axes[0].legend(loc="lower left", fontsize=8)
+    fig.colorbar(image, ax=axes[0], label="GEBCO elevation (km)")
+
     speeds = data["ssp_speeds_mps"]
     ssp_depths = data["ssp_depths_m"]
-    for profile in speeds[:: max(1, len(speeds) // 48)]:
-        axes[0].plot(profile, ssp_depths, color=BLUE, alpha=0.13, linewidth=0.8)
-    axes[0].plot(speeds.mean(0), ssp_depths, color=NAVY, linewidth=2.4, label="dataset mean")
-    axes[0].invert_yaxis()
-    axes[0].grid(alpha=0.18)
-    axes[0].set(
-        xlabel="Sound speed (m/s)",
-        ylabel="Depth (m)",
-        title="WOA23 June SSP and narrow perturbations",
-    )
-    axes[0].legend()
-
-    for profile in config.contract.bathymetry.profiles:
+    offsets = data["parameters"][:, 0]
+    selected = np.linspace(0, len(speeds) - 1, 64, dtype=int)
+    normalization = plt.Normalize(float(offsets.min()), float(offsets.max()))
+    for index in selected:
         axes[1].plot(
-            np.asarray(profile.ranges_m) / 1000.0,
-            profile.depths_m,
-            marker="o",
-            markersize=3,
-            label=profile.name.replace("gebco_", "").replace("_screened", "°"),
+            speeds[index], ssp_depths, color=plt.cm.coolwarm(normalization(offsets[index])),
+            alpha=0.22, linewidth=0.85,
         )
+    axes[1].plot(speeds.mean(0), ssp_depths, color=NAVY, linewidth=2.5,
+                 label="256-field mean")
     axes[1].invert_yaxis()
     axes[1].grid(alpha=0.18)
     axes[1].set(
+        xlabel="Sound speed (m/s)",
+        ylabel="Depth (m)",
+        title="WOA23 June SSP family",
+    )
+    axes[1].legend()
+
+    for profile in config.contract.bathymetry.profiles:
+        dense_range = np.linspace(0.0, 50_000.0, 401)
+        dense_depth = np.interp(dense_range, profile.ranges_m, profile.depths_m)
+        axes[2].plot(
+            dense_range / 1000.0,
+            dense_depth,
+            linewidth=2.0,
+            label=profile.name.replace("gebco_", "").replace("_screened", "°"),
+        )
+    axes[2].axhspan(0, 1990, color="#dcecf6", alpha=0.55, label="receiver domain")
+    axes[2].invert_yaxis()
+    axes[2].grid(alpha=0.18)
+    axes[2].set(
         xlabel="Range (km)",
         ylabel="Bottom depth (m)",
-        title="Four screened low-dimensional GEBCO profiles",
+        title="Screened low-dimensional bottom profiles",
     )
-    axes[1].legend(fontsize=8, ncol=2)
+    axes[2].legend(fontsize=8, ncol=2)
     _save(fig, "fig02_real_environment")
 
 
@@ -192,8 +244,8 @@ def _run_label(experiment_id: str) -> str:
         "real_r2_terrain_fno": "Global FNO-L",
         "real_r3_terrain_anchor_fno": "Anchor FNO-S",
         "real_r4_terrain_anchor_large_fno": "Anchor FNO-L",
-        "real_r5_anchor_data24": "Anchor FNO (24)",
-        "real_r6_anchor_data48": "Anchor FNO (48)",
+        "real_r5_anchor_data48": "Anchor FNO (48)",
+        "real_r6_anchor_data96": "Anchor FNO (96)",
     }
     return labels.get(experiment_id, experiment_id)
 
@@ -201,18 +253,17 @@ def _run_label(experiment_id: str) -> str:
 def plot_main_results(runs: list[dict]) -> None:
     main = [run for run in runs if run["metrics"]["experiment_id"].startswith("real_r")][:4]
     baseline = main[0]["metrics"]["mean_field_baseline_test"]["rmse_db"]
-    terrain = main[0]["metrics"]["terrain_mean_baseline_test"]["rmse_db"]
-    labels = ["Global mean", "Terrain mean"] + [
+    labels = ["Global mean"] + [
         _run_label(run["metrics"]["experiment_id"]) for run in main
     ]
-    values = [baseline, terrain] + [
+    values = [baseline] + [
         run["metrics"]["metrics"]["test"]["aggregate"]["rmse_db"] for run in main
     ]
-    colors = ["#9aa5ad", "#6c8799"] + [BLUE, NAVY, TEAL, GREEN]
+    colors = ["#9aa5ad"] + [BLUE, NAVY, TEAL, GREEN]
     fig, axes = plt.subplots(1, 2, figsize=(13.5, 4.8), constrained_layout=True)
     bars = axes[0].bar(labels, values, color=colors)
     axes[0].axhline(2.0, color=RED, linestyle="--", label="2 dB gate")
-    axes[0].set(ylabel="Held-out test RMSE (dB)", title="Baselines and operator variants")
+    axes[0].set(ylabel="Held-out test RMSE (dB)", title="Global baseline and operator variants")
     axes[0].tick_params(axis="x", rotation=24)
     axes[0].bar_label(bars, fmt="%.2f", fontsize=8)
     axes[0].legend()
@@ -231,9 +282,9 @@ def plot_main_results(runs: list[dict]) -> None:
 
 def plot_data_ablation(runs: list[dict]) -> None:
     wanted = {
-        "real_r5_anchor_data24": 24,
-        "real_r6_anchor_data48": 48,
-        "real_r3_terrain_anchor_fno": 96,
+        "real_r5_anchor_data48",
+        "real_r6_anchor_data96",
+        "real_r3_terrain_anchor_fno",
     }
     points = []
     for run in runs:
@@ -241,7 +292,7 @@ def plot_data_ablation(runs: list[dict]) -> None:
         if experiment in wanted:
             points.append(
                 (
-                    wanted[experiment],
+                    int(run["metrics"]["effective_train_samples"]),
                     run["metrics"]["metrics"]["test"]["aggregate"]["rmse_db"],
                     run["metrics"]["metrics"]["test"]["aggregate"]["p90_sample_rmse_db"],
                 )

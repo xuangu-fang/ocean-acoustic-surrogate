@@ -57,10 +57,25 @@ def _bathymetry_for_record(
     return family.profiles[sample_index % len(family.profiles)]
 
 
+def _source_depth_for_record(config: MVPConfig, record: SSPRecord) -> float:
+    sample_index = int(record.sample_id.rsplit("_", maxsplit=1)[-1])
+    terrain_count = (
+        len(config.contract.bathymetry.profiles)
+        if config.contract.bathymetry is not None
+        else 1
+    )
+    ssp_profile_count = max(1, len(config.ssp_family.profiles))
+    environment_stride = terrain_count * ssp_profile_count
+    source_depths = config.contract.resolved_source_depths_m
+    source_index = (sample_index // environment_stride) % len(source_depths)
+    return source_depths[source_index]
+
+
 def _dataset_splits(config: MVPConfig, n_samples: int) -> np.ndarray:
     family = config.contract.bathymetry
     ssp_profile_count = max(1, len(config.ssp_family.profiles))
-    if family is None and ssp_profile_count == 1:
+    source_depth_count = len(config.contract.resolved_source_depths_m)
+    if family is None and ssp_profile_count == 1 and source_depth_count == 1:
         return assign_splits(
             n_samples,
             config.contract.seed,
@@ -68,7 +83,7 @@ def _dataset_splits(config: MVPConfig, n_samples: int) -> np.ndarray:
             config.split.validation_fraction,
         )
     terrain_count = len(family.profiles) if family is not None else 1
-    group_count = terrain_count * ssp_profile_count
+    group_count = terrain_count * ssp_profile_count * source_depth_count
     splits = np.empty(n_samples, dtype="U10")
     for group_index in range(group_count):
         indices = np.arange(group_index, n_samples, group_count)
@@ -117,7 +132,7 @@ def build_task(config: MVPConfig, record: SSPRecord, num_rays: int, task_id: str
         task_id=task_id,
         model_name="bellhop",
         frequency_hz=contract.frequency_hz,
-        source_depth_m=contract.source_depth_m,
+        source_depth_m=_source_depth_for_record(config, record),
         receiver_depth_m=1000.0,
         receiver_range_m=contract.range_end_m,
         num_rays=num_rays,
@@ -137,6 +152,7 @@ def build_task(config: MVPConfig, record: SSPRecord, num_rays: int, task_id: str
             "ssp_family": config.ssp_family.name,
             "parameter_names": list(PARAMETER_NAMES),
             "parameters": record.parameters.tolist(),
+            "source_depth_m": _source_depth_for_record(config, record),
             "bathymetry_profile": (
                 selected_bathymetry.name if selected_bathymetry is not None else "flat"
             ),
@@ -168,12 +184,23 @@ def run_pilot(config: MVPConfig, n_samples: int = 8) -> Path:
     terrain_count = (
         len(config.contract.bathymetry.profiles) if config.contract.bathymetry is not None else 1
     )
-    records = build_ssp_records(
+    factor_count = (
+        terrain_count
+        * max(1, len(config.ssp_family.profiles))
+        * len(config.contract.resolved_source_depths_m)
+    )
+    pool_size = max(n_samples, factor_count)
+    record_pool = build_ssp_records(
         config.ssp_family,
-        n_samples,
+        pool_size,
         config.contract.seed + 100_000,
         template_cycle_stride=terrain_count,
     )
+    if n_samples < pool_size:
+        selected = np.linspace(0, factor_count - 1, num=n_samples, dtype=np.int64)
+        records = [record_pool[index] for index in selected]
+    else:
+        records = record_pool
     comparisons: dict[str, list[dict[str, float]]] = {}
     timings: dict[str, list[float]] = {str(rays): [] for rays in config.contract.pilot_ray_counts}
     failures = []
@@ -269,19 +296,32 @@ def run_pilot(config: MVPConfig, n_samples: int = 8) -> Path:
     return path
 
 
-def _reuse_prefix_labels(
+def _reuse_matching_labels(
     config: MVPConfig,
     records: list[SSPRecord],
     splits: np.ndarray,
     target_samples_root: Path,
     source_root: Path,
 ) -> int:
-    """Reuse a numerically identical prefix from a previously frozen dataset."""
+    """Reuse sample IDs whose environment and source depth are numerically identical."""
     if source_root.name == "dataset.npz":
         source_root = source_root.parent
     source_samples_root = source_root / "samples"
     if not source_samples_root.is_dir():
         raise FileNotFoundError(f"reuse source has no samples directory: {source_samples_root}")
+
+    source_manifest = source_root / "manifest.json"
+    source_default_depth = None
+    if source_manifest.exists():
+        source_contract = json.loads(source_manifest.read_text()).get("config", {}).get(
+            "contract", {}
+        )
+        source_depths = source_contract.get("source_depths_m") or [
+            source_contract.get("source_depth_m")
+        ]
+        source_depths = [depth for depth in source_depths if depth is not None]
+        if len(source_depths) == 1:
+            source_default_depth = float(source_depths[0])
 
     reused = 0
     for index, record in enumerate(records):
@@ -297,6 +337,14 @@ def _reuse_prefix_labels(
             continue
 
         metadata = json.loads(source_metadata.read_text())
+        expected_source_depth = _source_depth_for_record(config, record)
+        source_depth = metadata.get("source_depth_m", source_default_depth)
+        if source_depth is None:
+            raise ValueError(
+                f"reuse source depth is unknown for {record.sample_id}; refusing stale label"
+            )
+        if not np.isclose(float(source_depth), expected_source_depth):
+            continue
         selected_bathymetry = _bathymetry_for_record(config, record)
         expected_terrain = selected_bathymetry.name if selected_bathymetry is not None else "flat"
         with np.load(source_array) as raw:
@@ -326,6 +374,7 @@ def _reuse_prefix_labels(
             {
                 "split": str(splits[index]),
                 "config_hash": config.config_hash,
+                "source_depth_m": expected_source_depth,
                 "reused_from": str(source_sample),
             }
         )
@@ -357,14 +406,14 @@ def generate_dataset(
     splits = _dataset_splits(config, n_samples)
     reused_count = 0
     if reuse_prefix_from is not None:
-        reused_count = _reuse_prefix_labels(
+        reused_count = _reuse_matching_labels(
             config,
             records,
             splits,
             samples_root,
             reuse_prefix_from,
         )
-        print(f"reused {reused_count}/{n_samples} frozen prefix labels", flush=True)
+        print(f"reused {reused_count}/{n_samples} verified frozen labels", flush=True)
     failures = []
     for index, (record, split) in enumerate(zip(records, splits)):
         sample_dir = samples_root / record.sample_id
@@ -384,6 +433,7 @@ def generate_dataset(
             valid = np.isfinite(tl)
             scored = np.where(valid, tl, config.contract.invalid_tl_fill_db).astype(np.float32)
             selected_bathymetry = _bathymetry_for_record(config, record)
+            source_depth_m = _source_depth_for_record(config, record)
             bathymetry_on_grid = (
                 np.interp(
                     ranges,
@@ -422,6 +472,7 @@ def generate_dataset(
                     selected_bathymetry.name if selected_bathymetry is not None else "flat"
                 ),
                 "ssp_profile": record.profile_name,
+                "source_depth_m": source_depth_m,
             }
             metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
         except Exception as exc:  # noqa: BLE001 - record failure and finish manifest
@@ -469,6 +520,9 @@ def generate_dataset(
             [record["bathymetry_profile"] for record in metadata_records]
         ),
         ssp_profiles=np.asarray([record["ssp_profile"] for record in metadata_records]),
+        source_depths_m=np.asarray(
+            [record["source_depth_m"] for record in metadata_records], dtype=np.float32
+        ),
         **({"bathymetry_ranges_m": ranges} if config.contract.bathymetry is not None else {}),
     )
     project_root = Path(__file__).resolve().parents[2]
@@ -497,7 +551,7 @@ def generate_dataset(
             np.mean([record["finite_coverage"] for record in metadata_records])
         ),
         "label_provenance": {
-            "reused_prefix_count": int(
+            "reused_verified_count": int(
                 sum("reused_from" in record for record in metadata_records)
             ),
             "generated_in_dataset_count": int(

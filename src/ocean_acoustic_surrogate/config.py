@@ -56,6 +56,7 @@ class ContractConfig(BaseModel):
     seed: int
     frequency_hz: float = 1000.0
     source_depth_m: float = 50.0
+    source_depths_m: list[float] = Field(default_factory=list)
     water_depth_m: float = 2000.0
     range_start_m: float = 100.0
     range_end_m: float = 50000.0
@@ -81,6 +82,13 @@ class ContractConfig(BaseModel):
             if self.bathymetry is not None
             else self.water_depth_m
         )
+        source_depths = self.resolved_source_depths_m
+        if len(source_depths) != len(set(source_depths)):
+            raise ValueError("source_depths_m must not contain duplicates")
+        if any(depth <= 0 or depth >= minimum_bottom for depth in source_depths):
+            raise ValueError("every source depth must be positive and above the seabed")
+        if any(depth > self.depth_end_m for depth in source_depths):
+            raise ValueError("every source depth must lie inside the receiver depth domain")
         if self.depth_end_m >= minimum_bottom:
             raise ValueError("depth_end_m must remain above the seabed")
         if self.bathymetry is not None:
@@ -92,6 +100,12 @@ class ContractConfig(BaseModel):
         if self.field_mode != "incoherent":
             raise ValueError("MVP label contract requires incoherent Bellhop TL")
         return self
+
+    @property
+    def resolved_source_depths_m(self) -> tuple[float, ...]:
+        """Return the explicit source-depth design, preserving legacy scalar configs."""
+        values = self.source_depths_m or [self.source_depth_m]
+        return tuple(float(value) for value in values)
 
 
 class SSPTemplateConfig(BaseModel):

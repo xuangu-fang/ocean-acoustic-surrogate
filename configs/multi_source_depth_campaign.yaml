@@ -1,0 +1,89 @@
+training_defaults:
+  seed: 20260911
+  batch_size: 16
+  max_epochs: 300
+  early_stopping_patience: 55
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  scheduler: cosine
+  target_normalization: field_mean
+
+experiments:
+  - id: sourcebar_a0_no_source_encoding
+    hypothesis: Removing explicit source-depth channels measures whether the expanded task is identifiable from SSP and terrain alone.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      use_bathymetry_feature: true
+      use_source_depth_feature: false
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: sourcebar_a1_scalar_source
+    hypothesis: A normalized scalar source-depth plane provides global source conditioning.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      use_bathymetry_feature: true
+      use_source_depth_feature: true
+      source_depth_encoding: scalar
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: sourcebar_fno
+    hypothesis: Scalar source conditioning plus a depth-localized source map resolves multi-depth propagation while retaining seasonal and terrain awareness.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      use_bathymetry_feature: true
+      use_source_depth_feature: true
+      source_depth_encoding: scalar_gaussian
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: sourcebar_fno_h48
+    hypothesis: A wider source-conditioned operator tests whether remaining multi-depth error is capacity-limited.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    model:
+      hidden_channels: 48
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      use_bathymetry_feature: true
+      use_source_depth_feature: true
+      source_depth_encoding: scalar_gaussian
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0

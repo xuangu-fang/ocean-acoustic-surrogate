@@ -37,3 +37,16 @@ def test_terrain_tradeoff_contract_keeps_one_complexity_axis():
     assert min(relief) >= 1900.0
     assert max(max(profile.depths_m) for profile in config.contract.bathymetry.profiles) <= 4800.0
     assert max(len(profile.depths_m) for profile in config.contract.bathymetry.profiles) <= 12
+
+
+def test_multi_source_depth_contract_is_explicit_and_bounded():
+    config = MVPConfig.from_yaml(ROOT / "configs/multi_source_depth_mvp.yaml")
+    assert config.contract.resolved_source_depths_m == (
+        50.0,
+        100.0,
+        200.0,
+        400.0,
+        700.0,
+        1000.0,
+    )
+    assert max(config.contract.resolved_source_depths_m) < 2000.0

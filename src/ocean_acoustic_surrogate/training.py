@@ -161,7 +161,18 @@ def run_experiment(
             if "ssp_profiles" in raw
             else np.full(len(targets_db), "base")
         )
+        source_depths = (
+            raw["source_depths_m"].astype(np.float32)
+            if "source_depths_m" in raw
+            else np.full(len(targets_db), mvp.contract.source_depth_m, dtype=np.float32)
+        )
+    source_groups = np.asarray(
+        [f"z{value:04.0f}m" for value in source_depths], dtype=str
+    )
     grid_profiles = interpolate_ssp(ssp_depths, ssp_profiles, depths)
+    use_source_depth = bool(
+        experiment["model"].get("use_source_depth_feature", False)
+    )
     features_np = build_features(
         grid_profiles,
         ranges,
@@ -171,6 +182,12 @@ def run_experiment(
             if bool(experiment["model"].get("use_bathymetry_feature", True))
             else None
         ),
+        source_depths_m=source_depths if use_source_depth else None,
+        output_depths_m=depths if use_source_depth else None,
+        source_depth_encoding=str(
+            experiment["model"].get("source_depth_encoding", "scalar_gaussian")
+        ),
+        source_depth_scale_m=mvp.contract.water_depth_m,
     )
     indices = {split: np.flatnonzero(splits == split) for split in ("train", "validation", "test")}
     train_index = indices["train"]
@@ -334,8 +351,21 @@ def run_experiment(
             masks[split_index],
             ssp_groups[split_index],
         )
+        split_result["by_source_depth"] = stratified_metrics(
+            targets_db[split_index],
+            prediction_db[split_index],
+            masks[split_index],
+            source_groups[split_index],
+        )
         environment_groups = np.char.add(
-            np.char.add(terrain_groups[split_index], "::"), ssp_groups[split_index]
+            np.char.add(
+                np.char.add(
+                    np.char.add(terrain_groups[split_index], "::"),
+                    ssp_groups[split_index],
+                ),
+                "::",
+            ),
+            source_groups[split_index],
         )
         split_result["by_environment_group"] = stratified_metrics(
             targets_db[split_index],
@@ -444,6 +474,7 @@ def run_experiment(
         "ssp_depths_m": ssp_depths,
         "bathymetry_depths_m": bathymetry,
         "bathymetry_profiles": terrain_groups,
+        "source_depths_m": source_depths,
         "experiment_id": experiment["id"],
     }
     torch.save(checkpoint, run_dir / "model.pt")
@@ -460,6 +491,7 @@ def run_experiment(
         ssp_depths_m=ssp_depths,
         bathymetry_profiles=terrain_groups,
         ssp_profiles=ssp_groups,
+        source_depths_m=source_depths,
         **({"bathymetry_depths_m": bathymetry} if bathymetry is not None else {}),
     )
     (run_dir / "history.json").write_text(json.dumps(history, indent=2) + "\n")

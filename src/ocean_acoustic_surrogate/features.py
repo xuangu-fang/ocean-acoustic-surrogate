@@ -32,6 +32,11 @@ def build_features(
     *,
     use_hankel: bool,
     bathymetry_depths_m: np.ndarray | None = None,
+    source_depths_m: np.ndarray | None = None,
+    output_depths_m: np.ndarray | None = None,
+    source_depth_encoding: str = "scalar_gaussian",
+    source_depth_scale_m: float = 2000.0,
+    source_gaussian_width_m: float = 75.0,
 ) -> np.ndarray:
     n_samples, n_depths = profiles_on_grid.shape
     n_ranges = len(ranges_m)
@@ -46,6 +51,38 @@ def build_features(
             raise ValueError("bathymetry_depths_m must be [range] or [sample, range]")
         terrain = (bottom / 2000.0)[:, None, None, :]
         channels.append(np.broadcast_to(terrain, (n_samples, 1, n_depths, n_ranges)))
+    if source_depths_m is not None:
+        source_depths = np.asarray(source_depths_m, dtype=np.float32)
+        if source_depths.ndim == 0:
+            source_depths = np.full(n_samples, float(source_depths), dtype=np.float32)
+        if source_depths.shape != (n_samples,):
+            raise ValueError("source_depths_m must be scalar or [sample]")
+        if source_depth_scale_m <= 0:
+            raise ValueError("source_depth_scale_m must be positive")
+        scalar = (source_depths / source_depth_scale_m)[:, None, None, None]
+        channels.append(np.broadcast_to(scalar, (n_samples, 1, n_depths, n_ranges)))
+        if source_depth_encoding == "scalar_gaussian":
+            if output_depths_m is None:
+                raise ValueError("output_depths_m is required for scalar_gaussian encoding")
+            output_depths = np.asarray(output_depths_m, dtype=np.float32)
+            if output_depths.shape != (n_depths,):
+                raise ValueError("output_depths_m must match the SSP output depth grid")
+            if source_gaussian_width_m <= 0:
+                raise ValueError("source_gaussian_width_m must be positive")
+            marker = np.exp(
+                -0.5
+                * (
+                    (output_depths[None, :] - source_depths[:, None])
+                    / source_gaussian_width_m
+                )
+                ** 2
+            )
+            marker = marker[:, None, :, None]
+            channels.append(
+                np.broadcast_to(marker, (n_samples, 1, n_depths, n_ranges))
+            )
+        elif source_depth_encoding != "scalar":
+            raise ValueError("source_depth_encoding must be scalar or scalar_gaussian")
     if use_hankel:
         hankel = hankel_feature(ranges_m)[None, None, None, :]
         hankel = np.broadcast_to(hankel, (n_samples, 1, n_depths, n_ranges))

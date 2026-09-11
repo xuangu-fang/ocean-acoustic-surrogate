@@ -21,6 +21,27 @@ def test_feature_channels_are_explicit():
     )
 
 
+def test_source_depth_scalar_and_spatial_marker_are_explicit():
+    profiles = np.full((2, 4), 1500.0, dtype=np.float32)
+    ranges = np.linspace(100, 50000, 8, dtype=np.float32)
+    depths = np.asarray([10.0, 50.0, 1000.0, 1990.0], dtype=np.float32)
+    bathymetry = np.linspace(2000, 2080, 8, dtype=np.float32)
+    features = build_features(
+        profiles,
+        ranges,
+        use_hankel=False,
+        bathymetry_depths_m=bathymetry,
+        source_depths_m=np.asarray([50.0, 1000.0]),
+        output_depths_m=depths,
+        source_depth_encoding="scalar_gaussian",
+    )
+    assert features.shape == (2, 4, 4, 8)
+    np.testing.assert_allclose(features[0, 2], 0.025)
+    np.testing.assert_allclose(features[1, 2], 0.5)
+    assert np.argmax(features[0, 3, :, 0]) == 1
+    assert np.argmax(features[1, 3, :, 0]) == 2
+
+
 def test_target_transform_round_trip():
     targets = np.arange(48, dtype=np.float32).reshape(3, 4, 4)
     mask = np.ones_like(targets, dtype=bool)

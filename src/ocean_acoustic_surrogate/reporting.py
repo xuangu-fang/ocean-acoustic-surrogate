@@ -46,6 +46,11 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
             if "ssp_profiles" in raw
             else np.full(len(tl), "base")
         )
+        source_depths = (
+            raw["source_depths_m"].astype(np.float32)
+            if "source_depths_m" in raw
+            else np.full(len(tl), manifest["config"]["contract"]["source_depth_m"])
+        )
     train = np.flatnonzero(splits == "train")
     test = np.flatnonzero(splits == "test")
     counts = valid[train].sum(axis=0)
@@ -99,12 +104,20 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
             }
             for group in np.unique(ssp_groups)
         },
+        "source_depth_counts": {
+            f"{float(source_depth):g}": {
+                split: int(np.sum((source_depths == source_depth) & (splits == split)))
+                for split in ("train", "validation", "test")
+            }
+            for source_depth in np.unique(source_depths)
+        },
         "environment_group_counts": {
-            f"{terrain}::{ssp}": {
+            f"{terrain}::{ssp}::z{float(source_depth):g}m": {
                 split: int(
                     np.sum(
                         (terrain_groups == terrain)
                         & (ssp_groups == ssp)
+                        & (source_depths == source_depth)
                         & (splits == split)
                     )
                 )
@@ -112,6 +125,7 @@ def commit_dataset_profile(dataset_path: Path, manifest_path: Path) -> Path:
             }
             for terrain in np.unique(terrain_groups)
             for ssp in np.unique(ssp_groups)
+            for source_depth in np.unique(source_depths)
         },
     }
     output = project_root() / "docs/results/dataset_summary.json"
@@ -182,6 +196,11 @@ def plot_prediction_examples(run_dir: Path, output: Path) -> None:
         depths = raw["depths_m"]
         ssp = raw["ssp_speeds_mps"]
         ssp_depths = raw["ssp_depths_m"]
+        source_depths = (
+            raw["source_depths_m"]
+            if "source_depths_m" in raw
+            else np.full(len(prediction), np.nan)
+        )
     test = np.flatnonzero(splits == "test")
     rmse = np.asarray(
         [np.sqrt(np.mean((prediction[i][masks[i]] - reference[i][masks[i]]) ** 2)) for i in test]
@@ -231,6 +250,15 @@ def plot_prediction_examples(run_dir: Path, output: Path) -> None:
             va="top",
             fontsize=8,
         )
+        if np.isfinite(source_depths[index]):
+            axes[row, 0].text(
+                0.03,
+                0.89,
+                f"source {source_depths[index]:g} m",
+                transform=axes[row, 0].transAxes,
+                va="top",
+                fontsize=8,
+            )
     fig.suptitle("Held-out incoherent Bellhop TL: median and worst test samples")
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=170)

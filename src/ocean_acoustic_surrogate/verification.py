@@ -45,7 +45,15 @@ def verify_run(
             if "bathymetry_profiles" in raw
             else np.full(len(targets), "flat")
         )
+        source_depths = (
+            raw["source_depths_m"].astype(np.float32)
+            if "source_depths_m" in raw
+            else np.full(len(targets), mvp.contract.source_depth_m, dtype=np.float32)
+        )
     test = np.flatnonzero(splits == "test")
+    use_source_depth = bool(
+        checkpoint["model_config"].get("use_source_depth_feature", False)
+    )
     features_np = build_features(
         interpolate_ssp(ssp_depths, profiles, depths),
         ranges,
@@ -55,6 +63,14 @@ def verify_run(
             if bool(checkpoint["model_config"].get("use_bathymetry_feature", True))
             else None
         ),
+        source_depths_m=source_depths if use_source_depth else None,
+        output_depths_m=depths if use_source_depth else None,
+        source_depth_encoding=str(
+            checkpoint["model_config"].get(
+                "source_depth_encoding", "scalar_gaussian"
+            )
+        ),
+        source_depth_scale_m=mvp.contract.water_depth_m,
     )
     transform = TargetTransform.from_state_dict(checkpoint["target_transform"])
     model = build_model(checkpoint["model_config"], int(checkpoint["in_channels"]))

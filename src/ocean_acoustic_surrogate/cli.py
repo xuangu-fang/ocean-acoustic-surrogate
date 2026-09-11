@@ -22,7 +22,7 @@ def _parser() -> argparse.ArgumentParser:
         "--reuse-prefix-from",
         type=Path,
         default=None,
-        help="reuse an identical frozen sample prefix from an earlier dataset root",
+        help="reuse numerically identical frozen samples from an earlier dataset root",
     )
     campaign = subparsers.add_parser("campaign", help="train every registered experiment")
     campaign.add_argument("config", type=Path)

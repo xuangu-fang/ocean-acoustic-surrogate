@@ -1,0 +1,153 @@
+\documentclass[UTF8,11pt]{ctexart}
+\usepackage[a4paper,top=2.15cm,bottom=2.1cm,left=2.3cm,right=2.3cm,headheight=15pt]{geometry}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{TeX Gyre Heros}
+\setmonofont{DejaVu Sans Mono}[Scale=0.82]
+\setCJKmainfont{Noto Serif CJK SC}
+\setCJKsansfont{Noto Sans CJK SC}
+\usepackage{amsmath,amssymb,bm,graphicx,booktabs,tabularx,array,siunitx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem,fancyhdr,titlesec,listings,xurl,hyperref,lastpage,float}
+\definecolor{Navy}{HTML}{173E60}
+\definecolor{Blue}{HTML}{276B9A}
+\definecolor{Teal}{HTML}{24877D}
+\definecolor{Orange}{HTML}{D8792A}
+\definecolor{LightBlue}{HTML}{EEF5FA}
+\definecolor{LightGray}{HTML}{F4F6F8}
+\hypersetup{colorlinks=true,linkcolor=Navy,urlcolor=Blue,pdftitle={50--2000 m 声源深度泛化验证补充报告}}
+\graphicspath{{assets/}}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\sffamily\color{Navy}深海声传播损失快速计算}
+\fancyhead[R]{\small\sffamily\color{Navy}深声源泛化验证 V1.0}
+\fancyfoot[L]{\small\color{gray}Ocean Acoustic Surrogate Project}
+\fancyfoot[R]{\small\color{gray}\thepage\,/\,\pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.45pt}
+\titleformat{\section}{\Large\bfseries\sffamily\color{Navy}}{\thesection}{0.7em}{}
+  [\vspace{0.15em}\color{Blue}\titlerule]
+\titleformat{\subsection}{\large\bfseries\sffamily\color{Navy}}{\thesubsection}{0.6em}{}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newtcolorbox{summarybox}{enhanced,breakable,colback=LightBlue,colframe=Blue,
+  boxrule=0.7pt,arc=1mm,left=4mm,right=4mm,top=3mm,bottom=3mm}
+\lstdefinestyle{repro}{basicstyle=\ttfamily\footnotesize,backgroundcolor=\color{LightGray},
+  frame=single,rulecolor=\color{gray!35},breaklines=true,columns=fullflexible,
+  keepspaces=true,showstringspaces=false}
+\newcommand{\figfull}[3]{\begin{figure}[H]\centering
+  \includegraphics[width=#1\textwidth]{#2}\caption{#3}\end{figure}}
+\input{results_macros.tex}
+
+\begin{document}
+\begin{center}
+{\sffamily\color{Blue}\Large 技术验证补充报告}\par\vspace{0.45cm}
+{\sffamily\bfseries\color{Navy}\fontsize{23}{30}\selectfont
+50--2000 m 声源深度扩展与未见深度泛化验证}\par\vspace{0.35cm}
+{\large GEBCO 地形、WOA23 月度声速剖面与 SourceBAR-FNO}\par\vspace{0.6cm}
+\end{center}
+
+\begin{summarybox}
+本轮验证在不改变 1 kHz、50 km 和二维接收声场输出规格的前提下，将声源深度从
+50--1000 m 扩展至 50--2000 m。数据拆分以\textbf{声源深度为单位}：测试深度在训练中
+完全不出现，用于检验模型能否在连续深度变量上插值，而不是记忆离散深度。最佳模型测试
+RMSE 为 \textbf{\TestRMSE{} dB}、MAE 为 \textbf{\TestMAE{} dB}；训练均值场基线为
+\textbf{\BaselineRMSE{} dB}，RMSE 降低 \textbf{\ReductionPercent\%}；单场 A100 推理
+P95 为 \textbf{\LatencyP{} ms}。
+\end{summarybox}
+
+\section{验证目标与边界}
+核心问题不是把已见过的深度随机分到测试集，而是判断模型在未参与训练的声源深度上能否
+保持 2 dB 以内的全场平均误差。固定条件为：频率 1000 Hz、距离 50 km、Bellhop 非相干
+传播损失、25,600 条射线、96$\times$256 接收网格（深度 10--1990 m，距离 0.1--50 km）。
+
+声源可以位于接收网格下边界以下；其物理约束是声源位置处水深大于声源深度，而不是声源
+必须落入接收网格。为避免地形成为不必要风险，本轮从既有 GEBCO 巴士海峡候选剖面中保留
+源点水深均为 4800 m 的两个方向。2000 m 声源因此有充分海底净空，输出网格尺寸也无需改变。
+
+\figfull{1.0}{fig01_experiment_design.pdf}{实验环境和无泄漏深度拆分。训练、验证、测试深度互不重叠；验证和测试点均被相邻训练锚点包围。}
+
+\section{数据构造与严格拆分}
+共生成 480 个高质量参考声场：
+\[
+2\ \text{类地形}\times3\ \text{个月份}\times40\ \text{个声源深度}
+\times2\ \text{个平滑 SSP 扰动}=480.
+\]
+声源深度每 50 m 取一点：50, 100, \ldots, 1950, 2000 m。三类拆分如下：
+\begin{itemize}[leftmargin=2em,itemsep=0.2em]
+  \item 训练：除下述 10 个留出点以外的 30 个深度，共 360 场；
+  \item 验证（训练未见）：350, 750, 1150, 1550, 1950 m，共 60 场；
+  \item 测试（训练未见）：150, 550, 950, 1350, 1750 m，共 60 场。
+\end{itemize}
+地形来自 GEBCO 2026 巴士海峡候选区两个低维平滑方向剖面；SSP 锚点来自 WOA23 的 3、6、12
+月温盐资料经 TEOS-10 转换，并施加有界、平滑、可解释的低维扰动。每一个深度在两个地形、
+三个月份和两组扰动上均衡出现。
+
+正式标号前，以 12 个跨深度代表场比较 12,800 与 25,600 条射线。两者平均 RMSE 为
+0.222 dB、最差 0.326 dB，12/12 均成功；另行抽查的 2000 m 声源差异为 0.202 dB、
+有效覆盖率 100\%。正式数据统一采用 25,600 条射线。
+
+\section{连续声源条件算子}
+输入由声速场、距离相关海底深度和显式声源深度组成。令接收网格为
+$N_z\times N_r=96\times256$，批量维为 $B$。一维 SSP
+$c_i(z)$ 被复制到距离维，地形 $h_i(r)$ 被复制到深度维；声源深度 $z_{s,i}$ 采用全局
+标量平面，并在局部编码版本中附加平滑位置标记：
+\begin{align}
+X_i(z,r)&=\left[c_i(z),\ h_i(r),\frac{z_{s,i}}{4800}\right],\\
+G_i(z,r)&=\exp\!\left[-\frac{(z-z_{s,i})^2}{2\sigma_s^2}\right].
+\end{align}
+标量通道回答“声源有多深”，局部标记回答“声源相对于接收深度坐标位于哪里”。连续实值
+编码使未见深度可通过网络插值，而离散 one-hot 深度类别无法做到这一点。
+
+第 $\ell$ 个各向异性 Fourier 算子块为
+\[
+V_{\ell+1}=\phi\!\left(\mathrm{GN}\left[
+\mathcal{F}^{-1}\!\left(R_\ell\odot\mathcal{F}(V_\ell)\right)
++W_\ell V_\ell\right]+V_\ell\right),
+\]
+其中仅保留深度方向 16 个、距离方向 48 个 Fourier 模态，以匹配声场在 50 km 距离方向
+更丰富的结构。四个频谱--局部残差块之后，投影头输出标准化 TL 残差，再恢复训练集均值场。
+所有归一化统计和均值场只由 360 个训练样本拟合。
+
+\section{结果与分析}
+\figfull{0.96}{fig02_unseen_depth_performance.pdf}{各模型在严格未见深度测试集上的结果，以及最佳模型逐测试深度 RMSE。红线为 2 dB 要求。}
+
+最佳实验为 \texttt{\BestExperiment}，参数量 \ParameterCount。其测试 RMSE 为
+\TestRMSE{} dB，相比 \BaselineRMSE{} dB 的训练均值场基线绝对下降 \RMSEGain{} dB、
+相对下降 \ReductionPercent\%。这里的均值基线严格由训练集构造，没有使用地形或声源深度
+查表，也没有接触验证与测试标签。逐深度结果用于检查总体均值是否掩盖局部失败。
+
+宽模型给出数值最优结果；紧凑模型 \texttt{\CompactExperiment} 仅有
+\CompactParameterCount{} 个参数，测试 RMSE 为 \CompactRMSE{} dB。两者误差差仅约
+0.02 dB，而紧凑模型参数量不到宽模型一半，因此工程部署优先推荐紧凑局部源编码版本；
+宽模型保留为容量消融和数值上界。
+
+\figfull{1.0}{fig03_unseen_depth_examples.pdf}{三个未见测试深度的 Bellhop 标签、模型预测、绝对误差及 1000 m 接收深度切片。三例均来自封闭测试集。}
+
+\figfull{0.72}{fig04_training_curves.pdf}{验证曲线。模型选择只观察另一组未见深度，不使用测试深度或测试标签。}
+
+\section{结论、风险与下一步}
+本轮结果证明在两个源点深水地形、三个月份 SSP 和 50 m 深度采样下，显式连续声源编码
+能够推广到训练未出现的 150--1750 m 测试深度，同时满足误差和时延约束。它比随机样本拆分
+更接近实际使用时输入任意中间深度的情形。
+
+本轮刻意没有宣称 2000 m 以外的能力。当前 SSP 物理数据端点为 2000 m，接收网格下边界为
+1990 m；扩至 3000 m 需要先定义 2000--3000 m 的可信 SSP、选择源点更深的地形并重新做
+Bellhop 收敛审计。建议下一步先在 1850--2000 m 附近增加一个真正留出的测试点，随后再单独
+开展 3000 m 数据契约，而不是直接外推当前模型。
+
+\section*{P.S.：复现入口}
+本补充验证不覆盖已冻结的 V1.6 结果。复现命令如下：
+\begin{lstlisting}[style=repro,language=bash]
+cd /home/ubuntu/project/ocean-acoustic-surrogate
+uv sync --frozen
+uv run ocean-acoustic-surrogate pilot configs/unseen_source_depth_mvp.yaml --samples 12
+uv run ocean-acoustic-surrogate generate configs/unseen_source_depth_mvp.yaml --samples 480
+uv run ocean-acoustic-surrogate campaign \
+  configs/unseen_source_depth_mvp.yaml configs/unseen_source_depth_campaign.yaml \
+  --samples 480
+uv run python scripts/generate_unseen_depth_figures.py
+\end{lstlisting}
+配置、拆分、Bellhop 标签、模型权重、预测和指标均带哈希与 Git 版本信息；完整数据 SHA-256
+和逐样本指标见同目录的 \path{results.json}。本报告中的数字和图片均由冻结实验产物自动生成。
+
+\end{document}

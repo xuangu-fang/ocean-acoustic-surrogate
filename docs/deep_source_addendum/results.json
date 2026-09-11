@@ -1,0 +1,235 @@
+{
+  "dataset_id": "bashi_gebco_two_terrain_woa23_m03_m06_m12_z0050_z2000_dense_unseen_v1.0_n480",
+  "config_hash": "a56e17207e0802050b28ce88a06d2e7f17a0a4d6cfdd8119f2a2a5775167c83c",
+  "dataset_path": "/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate/datasets/bashi_gebco_two_terrain_woa23_m03_m06_m12_z0050_z2000_dense_unseen_v1.0_n480/n480/dataset.npz",
+  "dataset_sha256": "6f2f167bc59543abb519fa9487d1225ce0f8a36d93607174bebf96875b5e065b",
+  "n_samples": 480,
+  "source_depth_range_m": [
+    50.0,
+    2000.0
+  ],
+  "validation_source_depths_m": [
+    350.0,
+    750.0,
+    1150.0,
+    1550.0,
+    1950.0
+  ],
+  "test_source_depths_m": [
+    150.0,
+    550.0,
+    950.0,
+    1350.0,
+    1750.0
+  ],
+  "best_run": "/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate/runs/20260911T070139Z_deep_sourcebar_gaussian_h48",
+  "best_experiment_id": "deep_sourcebar_gaussian_h48",
+  "recommended_compact_run": "/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate/runs/20260911T065940Z_deep_sourcebar_gaussian_h32",
+  "recommended_compact_experiment_id": "deep_sourcebar_gaussian_h32",
+  "recommended_compact_test": {
+    "rmse_db": 1.7685661652606848,
+    "mae_db": 0.987217972892763,
+    "bias_db": -0.017640243757444173,
+    "p95_absolute_error_db": 3.7698944091796864,
+    "maximum_absolute_error_db": 40.12156677246094,
+    "cell_count": 1474557,
+    "macro_mean_rmse_db": 1.6741482282762064,
+    "median_sample_rmse_db": 1.5041539764595524,
+    "p90_sample_rmse_db": 2.662347574971012,
+    "worst_sample_rmse_db": 3.3075752987636164
+  },
+  "recommended_compact_parameter_count": 6300513,
+  "test": {
+    "rmse_db": 1.7523949595563497,
+    "mae_db": 0.9773520442991489,
+    "bias_db": -0.0610203949227288,
+    "p95_absolute_error_db": 3.7287841796874996,
+    "maximum_absolute_error_db": 40.718841552734375,
+    "cell_count": 1474557,
+    "macro_mean_rmse_db": 1.657166983135422,
+    "median_sample_rmse_db": 1.4868543513161654,
+    "p90_sample_rmse_db": 2.6404323756351213,
+    "worst_sample_rmse_db": 3.218250729378128
+  },
+  "test_by_source_depth": {
+    "z0150m": {
+      "rmse_db": 2.671419858801278,
+      "mae_db": 1.586218818805363,
+      "bias_db": -0.11644709616954768,
+      "p95_absolute_error_db": 5.973640441894531,
+      "maximum_absolute_error_db": 40.718841552734375,
+      "cell_count": 294909,
+      "macro_mean_rmse_db": 2.6427393267763324,
+      "median_sample_rmse_db": 2.705808294584485,
+      "p90_sample_rmse_db": 3.1595146577408255,
+      "worst_sample_rmse_db": 3.218250729378128
+    },
+    "z0550m": {
+      "rmse_db": 1.617520455723046,
+      "mae_db": 0.9906722392705787,
+      "bias_db": -0.018008839946964547,
+      "p95_absolute_error_db": 3.4423789978027353,
+      "maximum_absolute_error_db": 26.848777770996094,
+      "cell_count": 294912,
+      "macro_mean_rmse_db": 1.6048194792176425,
+      "median_sample_rmse_db": 1.597123635566117,
+      "p90_sample_rmse_db": 1.8411128583632537,
+      "worst_sample_rmse_db": 1.9736508580187682
+    },
+    "z0950m": {
+      "rmse_db": 1.569430632954299,
+      "mae_db": 0.8985592601174075,
+      "bias_db": -0.062216543450227216,
+      "p95_absolute_error_db": 3.313964080810547,
+      "maximum_absolute_error_db": 28.37603759765625,
+      "cell_count": 294912,
+      "macro_mean_rmse_db": 1.5648209186405795,
+      "median_sample_rmse_db": 1.5162058507574598,
+      "p90_sample_rmse_db": 1.7303757992761832,
+      "worst_sample_rmse_db": 1.7531855903275202
+    },
+    "z1350m": {
+      "rmse_db": 1.4102303686626183,
+      "mae_db": 0.8092605840388892,
+      "bias_db": -0.04906781901243246,
+      "p95_absolute_error_db": 2.949943923950196,
+      "maximum_absolute_error_db": 23.442829132080078,
+      "cell_count": 294912,
+      "macro_mean_rmse_db": 1.4055318483637558,
+      "median_sample_rmse_db": 1.4122501392697395,
+      "p90_sample_rmse_db": 1.574891584134669,
+      "worst_sample_rmse_db": 1.5932673871819325
+    },
+    "z1750m": {
+      "rmse_db": 1.072270086190691,
+      "mae_db": 0.6020555129766257,
+      "bias_db": -0.05936223986403396,
+      "p95_absolute_error_db": 2.0525829315185553,
+      "maximum_absolute_error_db": 21.387008666992188,
+      "cell_count": 294912,
+      "macro_mean_rmse_db": 1.0679233426788008,
+      "median_sample_rmse_db": 1.0536763557364437,
+      "p90_sample_rmse_db": 1.1628792960858811,
+      "worst_sample_rmse_db": 1.2753664713913835
+    }
+  },
+  "mean_field_baseline_test": {
+    "rmse_db": 3.6827837376047152,
+    "mae_db": 2.3384320242660888,
+    "bias_db": -0.22109182749845938,
+    "p95_absolute_error_db": 7.924691772460937,
+    "maximum_absolute_error_db": 43.52565002441406,
+    "cell_count": 1474557,
+    "macro_mean_rmse_db": 3.3998920774527805,
+    "median_sample_rmse_db": 2.734230094644877,
+    "p90_sample_rmse_db": 6.049256192769896,
+    "worst_sample_rmse_db": 7.144765103920269
+  },
+  "baseline_improvement_rmse_db": 1.9303887780483655,
+  "baseline_rmse_reduction_percent": 52.416566260387896,
+  "latency": {
+    "gpu": {
+      "repeats": 200,
+      "median_ms": 5.340002477169037,
+      "p90_ms": 6.182842701673508,
+      "p95_ms": 6.254355423152447,
+      "maximum_ms": 6.374821998178959
+    },
+    "cpu": {
+      "repeats": 20,
+      "median_ms": 356.4972123131156,
+      "p90_ms": 359.386935364455,
+      "p95_ms": 359.791265334934,
+      "maximum_ms": 362.5428844243288
+    }
+  },
+  "acceptance": {
+    "rmse_pass": true,
+    "mae_pass": true,
+    "latency_pass": true,
+    "mean_baseline_informative_pass": true,
+    "overall_pass": true
+  },
+  "pilot_convergence": [
+    {
+      "lower_rays": 12800,
+      "upper_rays": 25600,
+      "n_samples": 12,
+      "mean_mae_db": 0.06009068604937585,
+      "mean_rmse_db": 0.22155022039867853,
+      "worst_rmse_db": 0.3257672104360537,
+      "mean_p95_absolute_error_db": 0.20703034400939938
+    }
+  ],
+  "pilot_failures": [],
+  "independent_verification": {
+    "deep_sourcebar_gaussian_h32": {
+      "run_id": "20260911T065940Z_deep_sourcebar_gaussian_h32",
+      "dataset_sha256": "6f2f167bc59543abb519fa9487d1225ce0f8a36d93607174bebf96875b5e065b",
+      "dataset_hash_matches_run": true,
+      "recorded_test_rmse_db": 1.7685661652606848,
+      "recomputed_test_rmse_db": 1.7685673997245297,
+      "rmse_absolute_delta_db": 1.234463844923539e-06,
+      "checkpoint_reload_matches_rmse": true,
+      "latency": {
+        "device": "cuda",
+        "repeats": 200,
+        "median_ms": 4.055601079016924,
+        "p90_ms": 4.663848597556353,
+        "p95_ms": 4.695384902879596,
+        "maximum_ms": 4.768917337059975
+      },
+      "acceptance": {
+        "rmse_pass": true,
+        "mae_pass": true,
+        "latency_pass": true,
+        "overall_pass": true
+      },
+      "verification_pass": true
+    },
+    "deep_sourcebar_gaussian_h48": {
+      "run_id": "20260911T070139Z_deep_sourcebar_gaussian_h48",
+      "dataset_sha256": "6f2f167bc59543abb519fa9487d1225ce0f8a36d93607174bebf96875b5e065b",
+      "dataset_hash_matches_run": true,
+      "recorded_test_rmse_db": 1.7523949595563497,
+      "recomputed_test_rmse_db": 1.7523823848395583,
+      "rmse_absolute_delta_db": 1.2574716791391438e-05,
+      "checkpoint_reload_matches_rmse": true,
+      "latency": {
+        "device": "cuda",
+        "repeats": 200,
+        "median_ms": 5.365102551877499,
+        "p90_ms": 5.703734327107667,
+        "p95_ms": 6.401275843381882,
+        "maximum_ms": 6.636092439293861
+      },
+      "acceptance": {
+        "rmse_pass": true,
+        "mae_pass": true,
+        "latency_pass": true,
+        "overall_pass": true
+      },
+      "verification_pass": true
+    }
+  },
+  "experiments": [
+    {
+      "experiment_id": "deep_sourcebar_scalar_h32",
+      "test_rmse_db": 1.854576704949388,
+      "test_mae_db": 0.9730703637202381,
+      "parameter_count": 6300481
+    },
+    {
+      "experiment_id": "deep_sourcebar_gaussian_h32",
+      "test_rmse_db": 1.7685661652606848,
+      "test_mae_db": 0.987217972892763,
+      "parameter_count": 6300513
+    },
+    {
+      "experiment_id": "deep_sourcebar_gaussian_h48",
+      "test_rmse_db": 1.7523949595563497,
+      "test_mae_db": 0.9773520442991489,
+      "parameter_count": 14172305
+    }
+  ]
+}

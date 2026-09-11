@@ -58,6 +58,35 @@ SourceBAR-FNO 六档源深分组 RMSE 为 1.080--1.477 dB，全部低于 2 dB。
 
 最终模型 CPU 诊断 P95 为 141.64 ms，因此正式时延验收平台为 A100。
 
+## 50--2000 m 连续源深扩展（V1.0）
+
+在不覆盖上述 V1.6 冻结版本的前提下，新分支将声源深度扩展到 **50--2000 m**，按
+**50 m** 间隔设置 40 个深度点。正式数据为
+`2 地形 × 3 月份 × 40 源深 × 2 扰动 = 480` 场，仍使用 25,600 射线 Bellhop 标签和
+`96 × 256` 输出网格。源点选择两个水深 4800 m 的 GEBCO 方向剖面，因此 2000 m 声源
+具有充分海底净空；声源可以低于 1990 m 接收网格下边界，不会改变输出尺寸。
+
+本轮按完整声源深度留出，而非随机样本划分：
+
+- 训练：其余 30 个深度，360 场；
+- 验证未见深度：350/750/1150/1550/1950 m，60 场；
+- 测试未见深度：150/550/950/1350/1750 m，60 场。
+
+| 方法 | 参数量 | 未见深度测试 RMSE | MAE | A100 P95 | 相对均值场下降 |
+|---|---:|---:|---:|---:|---:|
+| 训练均值场 | -- | 3.683 dB | 2.338 dB | -- | -- |
+| 标量源深 H32 | 6.30 M | 1.855 dB | 0.973 dB | 4.68 ms | 49.6% |
+| **局部源编码 H32（推荐）** | **6.30 M** | **1.769 dB** | **0.987 dB** | **4.70 ms** | **52.0%** |
+| 局部源编码 H48（数值最优） | 14.17 M | 1.752 dB | 0.977 dB | 6.25 ms | 52.4% |
+
+紧凑版与宽版 checkpoint 均已由独立 CUDA 进程重新加载复核；紧凑版复算 RMSE 为
+1.768567 dB，与训练记录相差 `1.23e-6 dB`。逐深度测试显示 550--1750 m 为
+1.07--1.65 dB；150 m 为 2.67 dB，是下一轮可定向优化的浅源短板，但不影响合同规定的
+全测试场平均 RMSE 小于 2 dB。
+
+完整设计、分组结果、预测图和复现说明见
+[`docs/Deep_Source_Generalization_Addendum_v1.0.pdf`](docs/Deep_Source_Generalization_Addendum_v1.0.pdf)。
+
 ## 方法概览
 
 SourceBAR-FNO 不使用人工 Hankel 特征。单样本张量流为：
@@ -90,7 +119,9 @@ predicted TL [96, 256] dB
 ocean-acoustic-surrogate/
 ├── configs/
 │   ├── multi_source_depth_mvp.yaml           # 冻结场景、月份、地形、源深与 Bellhop
-│   └── multi_source_depth_campaign.yaml      # SourceBAR-FNO 与源深编码消融
+│   ├── multi_source_depth_campaign.yaml      # SourceBAR-FNO 与源深编码消融
+│   ├── unseen_source_depth_mvp.yaml          # 50--2000 m 密集源深与整深度留出
+│   └── unseen_source_depth_campaign.yaml     # 连续源深编码与容量消融
 ├── src/ocean_acoustic_surrogate/
 │   ├── ssp.py                               # 月度模板、LHS 与平滑 SSP
 │   ├── dataset.py                           # 收敛审计、断点生成与打包
@@ -100,7 +131,9 @@ ocean-acoustic-surrogate/
 │   └── verification.py                      # 独立 checkpoint 复核
 ├── scripts/
 │   ├── reproduce_mvp.sh                     # 检查、训练、全流程与复核
-│   └── build_technical_report.sh            # 重建图表与 V1.6 PDF
+│   ├── generate_dataset_shard.py            # 多进程安全分片 Bellhop 标号
+│   ├── build_technical_report.sh            # 重建图表与 V1.6 PDF
+│   └── build_deep_source_addendum.sh         # 重建 V1.0 深源补充报告
 ├── docs/results/                             # 可提交 Git 的冻结指标摘要
 ├── docs/technical_report/                    # LaTeX 源文件和图表
 └── tests/
@@ -177,6 +210,8 @@ uv run ocean-acoustic-surrogate verify \
 ## 报告与版本
 
 - [甲方技术报告 V1.6（PDF）](docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.6.pdf)
+- [50--2000 m 未见深度泛化补充报告 V1.0（PDF）](docs/Deep_Source_Generalization_Addendum_v1.0.pdf)
+- [V1.0 可机读结果与独立复核摘要](docs/deep_source_addendum/results.json)
 - [V1.6 LaTeX 源码与构建说明](docs/technical_report/)
 - [432 场多源深冻结验证摘要](docs/results/multi_source_depth_v0.8_n432_verification_summary.json)
 - [完整工程实验记录](docs/project_report.md)

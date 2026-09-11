@@ -1,5 +1,11 @@
 # 1 kHz 深海声传播损失快速代理项目报告
 
+> 历史工程记录：本文件保留最初固定 50 m、平坦海底 MVP 的完整探索过程。当前对外技术
+> 结果已经推进到六档声源深度、GEBCO 地形与 WOA23 三个月份的 V1.6；请以
+> [`Ocean_Acoustic_Surrogate_Technical_Report_v1.6.pdf`](Ocean_Acoustic_Surrogate_Technical_Report_v1.6.pdf)
+> 和 [`multi_source_depth_v0.8_n432_verification_summary.json`](results/multi_source_depth_v0.8_n432_verification_summary.json)
+> 为准。旧记录不覆盖、用于版本追溯。
+
 状态：MVP 已完成并通过验收
 
 实验日期：2026-08-27

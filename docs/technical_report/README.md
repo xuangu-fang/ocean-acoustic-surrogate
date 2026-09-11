@@ -10,13 +10,13 @@ bash scripts/build_technical_report.sh
 若数据和实验产物位于其他位置，可通过 `OCEAN_SURROGATE_ROOT=/path/to/artifacts`
 显式覆盖默认的大数据根目录。
 
-默认构建 384 场、三个月份与四类地形的 V1.5 技术报告，最终 PDF 输出到：
+默认构建 432 场、三个月份、四类地形与六档声源深度的 V1.6 技术报告，最终 PDF 输出到：
 
-`docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.5.pdf`
+`docs/Ocean_Acoustic_Surrogate_Technical_Report_v1.6.pdf`
 
 附录中的一键复现入口为仓库根目录下的 `scripts/reproduce_mvp.sh`。默认不执行 Bellhop；
 只有显式设置 `REPRO_MODE=full` 才会生成标签并重新训练。
 
-V1.5 正文源文件为 `technical_report_v1.5.tex`，图表源程序为
-`scripts/generate_realistic_report_figures.py`。图表的 PDF/PNG 双格式版本位于 `assets/`。
-V1.2/V1.3 源文件继续保留，用于追溯此前报告。
+V1.6 正文源文件为 `technical_report_v1.6.tex`，图表源程序为
+`scripts/generate_multisource_report_figures.py`。图表的 PDF/PNG 双格式版本位于 `assets/`。
+V1.5 及更早源文件继续保留，用于追溯固定 50 m 声源深度版本。

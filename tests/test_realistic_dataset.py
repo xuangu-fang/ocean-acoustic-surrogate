@@ -134,10 +134,10 @@ def test_multi_source_depth_design_has_72_balanced_groups_and_reusable_50m_cases
 
 def test_unseen_source_depth_split_has_no_depth_leakage():
     config = MVPConfig.from_yaml("configs/unseen_source_depth_mvp.yaml")
-    splits = _dataset_splits(config, 252)
+    splits = _dataset_splits(config, 480)
     records = build_ssp_records(
         config.ssp_family,
-        252,
+        480,
         config.contract.seed,
         template_cycle_stride=2,
     )
@@ -155,6 +155,6 @@ def test_unseen_source_depth_split_has_no_depth_leakage():
     assert not (depths_by_split["train"] & depths_by_split["test"])
     assert dict(zip(*np.unique(splits, return_counts=True))) == {
         "test": 60,
-        "train": 132,
+        "train": 360,
         "validation": 60,
     }

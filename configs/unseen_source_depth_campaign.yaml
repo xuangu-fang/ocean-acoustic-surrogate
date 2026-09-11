@@ -11,7 +11,7 @@ training_defaults:
 experiments:
   - id: deep_sourcebar_scalar_h32
     hypothesis: Continuous scalar source conditioning should interpolate to source depths never observed during training.
-    minimum_mean_baseline_test_rmse_db: 4.0
+    minimum_mean_baseline_test_rmse_db: 2.0
     model:
       hidden_channels: 32
       modes_depth: 16
@@ -31,7 +31,7 @@ experiments:
 
   - id: deep_sourcebar_gaussian_h32
     hypothesis: Adding a smooth depth-localized source marker improves unseen-depth interpolation near the lower receiver boundary.
-    minimum_mean_baseline_test_rmse_db: 4.0
+    minimum_mean_baseline_test_rmse_db: 2.0
     model:
       hidden_channels: 32
       modes_depth: 16
@@ -51,7 +51,7 @@ experiments:
 
   - id: deep_sourcebar_gaussian_h48
     hypothesis: A wider operator checks whether residual unseen-depth error is limited by representation capacity.
-    minimum_mean_baseline_test_rmse_db: 4.0
+    minimum_mean_baseline_test_rmse_db: 2.0
     model:
       hidden_channels: 48
       modes_depth: 16

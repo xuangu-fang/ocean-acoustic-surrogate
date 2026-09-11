@@ -1,10 +1,12 @@
 contract:
-  dataset_id: bashi_gebco_two_terrain_woa23_m03_m06_m12_z0050_z2000_unseen_v0.9_n252
+  dataset_id: bashi_gebco_two_terrain_woa23_m03_m06_m12_z0050_z2000_dense_unseen_v1.0_n480
   seed: 20260911
   frequency_hz: 1000.0
   source_depth_m: 50.0
-  # Dense source-depth grid. Validation/test depths are completely absent from training.
-  source_depths_m: [50.0, 150.0, 250.0, 350.0, 450.0, 550.0, 650.0, 750.0, 850.0, 950.0, 1050.0, 1150.0, 1250.0, 1350.0, 1450.0, 1550.0, 1650.0, 1750.0, 1850.0, 1950.0, 2000.0]
+  # Dense 50 m source-depth grid. Odd-grid depths come first so the first 126
+  # high-quality labels remain byte-verifiable against the v0.9 pilot dataset.
+  # Validation/test depths are completely absent from training.
+  source_depths_m: [50.0, 150.0, 250.0, 350.0, 450.0, 550.0, 650.0, 750.0, 850.0, 950.0, 1050.0, 1150.0, 1250.0, 1350.0, 1450.0, 1550.0, 1650.0, 1750.0, 1850.0, 1950.0, 2000.0, 100.0, 200.0, 300.0, 400.0, 500.0, 600.0, 700.0, 800.0, 900.0, 1000.0, 1100.0, 1200.0, 1300.0, 1400.0, 1500.0, 1600.0, 1700.0, 1800.0, 1900.0]
   # Both retained profiles are 4800 m deep at the source. The receiver field remains
   # fixed at 10--1990 m, so the 2000 m source does not enlarge the model output grid.
   water_depth_m: 4800.0
@@ -46,7 +48,8 @@ ssp_family:
   channel_axis_shift_m: [-35.0, 35.0]
   deep_gradient_mps: [-0.55, 0.55]
   interpolation_points: 41
-  # Two independent perturbation realizations for each 2 terrain x 3 month x 21 depth group.
+  # Nested blocks preserve the first 126 labels while 480 fields provide two
+  # perturbation realizations for every 2 terrain x 3 month x 40 depth group.
   design_block_size: 126
   profiles:
     - name: woa23_march

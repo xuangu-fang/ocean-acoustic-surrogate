@@ -1,0 +1,78 @@
+contract:
+  dataset_id: bashi_gebco_two_terrain_woa23_m03_m06_m12_z0050_z2000_unseen_v0.9_n252
+  seed: 20260911
+  frequency_hz: 1000.0
+  source_depth_m: 50.0
+  # Dense source-depth grid. Validation/test depths are completely absent from training.
+  source_depths_m: [50.0, 150.0, 250.0, 350.0, 450.0, 550.0, 650.0, 750.0, 850.0, 950.0, 1050.0, 1150.0, 1250.0, 1350.0, 1450.0, 1550.0, 1650.0, 1750.0, 1850.0, 1950.0, 2000.0]
+  # Both retained profiles are 4800 m deep at the source. The receiver field remains
+  # fixed at 10--1990 m, so the 2000 m source does not enlarge the model output grid.
+  water_depth_m: 4800.0
+  range_start_m: 100.0
+  range_end_m: 50000.0
+  range_steps: 256
+  depth_start_m: 10.0
+  depth_end_m: 1990.0
+  depth_steps: 96
+  field_mode: incoherent
+  reference_num_rays: 25600
+  pilot_ray_counts: [12800, 25600]
+  invalid_tl_fill_db: 120.0
+  seabed:
+    kind: fluid
+    speed_mps: 1700.0
+    density_kgm3: 2000.0
+    attenuation_dbperlambda: 0.8
+  bathymetry:
+    name: bashi_gebco2026_deep_origin_two_profile_family
+    profiles:
+      - name: gebco_az030_screened
+        source: GEBCO_2026_Bashi_center_20.5N_121.5E_azimuth_030deg
+        processing: 9km_moving_average_affine_to_2000_4800m_5km_resampling_with_extrema
+        ranges_m: [0, 5000, 10000, 15000, 19000, 20000, 25000, 30000, 35000, 40000, 45000, 50000]
+        depths_m: [4800.0, 3836.347, 2853.2, 2244.661, 2000.0, 2003.384, 2486.237, 2809.423, 2394.842, 2107.738, 2221.707, 2439.874]
+      - name: gebco_az090_screened
+        source: GEBCO_2026_Bashi_center_20.5N_121.5E_azimuth_090deg
+        processing: 9km_moving_average_affine_to_2000_4800m_5km_resampling_with_extrema
+        ranges_m: [0, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 39000, 40000, 45000, 50000]
+        depths_m: [4800.0, 4466.206, 3875.023, 3214.056, 2897.998, 2365.415, 2297.395, 2159.273, 2000.0, 2016.21, 2178.372, 2042.103]
+
+ssp_family:
+  name: bashi_woa23_representative_three_month_moderate
+  depths_m: [0, 50, 100, 200, 400, 700, 1000, 1300, 1600, 1800, 2000]
+  base_speeds_mps: [1542.6766, 1539.5985, 1534.5546, 1522.6379, 1501.9202, 1486.3556, 1484.3221, 1483.8345, 1486.6744, 1489.2257, 1489.8210]
+  global_offset_mps: [-0.55, 0.55]
+  thermocline_amplitude_mps: [-0.8, 0.8]
+  channel_axis_shift_m: [-35.0, 35.0]
+  deep_gradient_mps: [-0.55, 0.55]
+  interpolation_points: 41
+  # Two independent perturbation realizations for each 2 terrain x 3 month x 21 depth group.
+  design_block_size: 126
+  profiles:
+    - name: woa23_march
+      source: WOA23_decav_0.25_degree_month03_at_20.625N_121.625E
+      processing: TEOS10_then_depth_interpolation_with_annual_fill_below_1500m
+      speeds_mps: [1535.6874, 1535.3956, 1533.1777, 1521.7985, 1501.6772, 1486.7747, 1483.5726, 1483.6504, 1486.6744, 1489.2257, 1489.8210]
+    - name: woa23_june
+      source: WOA23_decav_0.25_degree_month06_at_20.625N_121.625E
+      processing: TEOS10_then_depth_interpolation_with_annual_fill_below_1500m
+      speeds_mps: [1542.6766, 1539.5985, 1534.5546, 1522.6379, 1501.9202, 1486.3556, 1484.3221, 1483.8345, 1486.6744, 1489.2257, 1489.8210]
+    - name: woa23_december
+      source: WOA23_decav_0.25_degree_month12_at_20.625N_121.625E
+      processing: TEOS10_then_depth_interpolation_with_annual_fill_below_1500m
+      speeds_mps: [1536.0364, 1535.8153, 1532.7061, 1520.2255, 1500.0953, 1487.1805, 1483.2622, 1483.8351, 1486.6744, 1489.2257, 1489.8210]
+
+split:
+  train_fraction: 0.75
+  validation_fraction: 0.125
+  test_fraction: 0.125
+  validation_source_depths_m: [350.0, 750.0, 1150.0, 1550.0, 1950.0]
+  test_source_depths_m: [150.0, 550.0, 950.0, 1350.0, 1750.0]
+
+acceptance:
+  maximum_test_rmse_db: 2.0
+  maximum_test_mae_db: 2.0
+  maximum_p95_latency_ms: 100.0
+
+storage:
+  default_root: /mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate

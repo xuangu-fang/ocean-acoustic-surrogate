@@ -130,3 +130,31 @@ def test_multi_source_depth_design_has_72_balanced_groups_and_reusable_50m_cases
     task = build_task(config, records[12], 12800, "source_depth_contract")
     assert task.source_depth_m == 100.0
     assert task.metadata["source_depth_m"] == 100.0
+
+
+def test_unseen_source_depth_split_has_no_depth_leakage():
+    config = MVPConfig.from_yaml("configs/unseen_source_depth_mvp.yaml")
+    splits = _dataset_splits(config, 252)
+    records = build_ssp_records(
+        config.ssp_family,
+        252,
+        config.contract.seed,
+        template_cycle_stride=2,
+    )
+    depths_by_split = {
+        split: {
+            _source_depth_for_record(config, record)
+            for record, assigned in zip(records, splits)
+            if assigned == split
+        }
+        for split in ("train", "validation", "test")
+    }
+    assert depths_by_split["validation"] == {350.0, 750.0, 1150.0, 1550.0, 1950.0}
+    assert depths_by_split["test"] == {150.0, 550.0, 950.0, 1350.0, 1750.0}
+    assert not (depths_by_split["train"] & depths_by_split["validation"])
+    assert not (depths_by_split["train"] & depths_by_split["test"])
+    assert dict(zip(*np.unique(splits, return_counts=True))) == {
+        "test": 60,
+        "train": 132,
+        "validation": 60,
+    }

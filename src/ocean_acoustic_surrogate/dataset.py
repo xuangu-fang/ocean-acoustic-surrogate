@@ -47,9 +47,7 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _bathymetry_for_record(
-    config: MVPConfig, record: SSPRecord
-) -> BathymetryProfileConfig | None:
+def _bathymetry_for_record(config: MVPConfig, record: SSPRecord) -> BathymetryProfileConfig | None:
     family = config.contract.bathymetry
     if family is None:
         return None
@@ -60,9 +58,7 @@ def _bathymetry_for_record(
 def _source_depth_for_record(config: MVPConfig, record: SSPRecord) -> float:
     sample_index = int(record.sample_id.rsplit("_", maxsplit=1)[-1])
     terrain_count = (
-        len(config.contract.bathymetry.profiles)
-        if config.contract.bathymetry is not None
-        else 1
+        len(config.contract.bathymetry.profiles) if config.contract.bathymetry is not None else 1
     )
     ssp_profile_count = max(1, len(config.ssp_family.profiles))
     environment_stride = terrain_count * ssp_profile_count
@@ -75,6 +71,23 @@ def _dataset_splits(config: MVPConfig, n_samples: int) -> np.ndarray:
     family = config.contract.bathymetry
     ssp_profile_count = max(1, len(config.ssp_family.profiles))
     source_depth_count = len(config.contract.resolved_source_depths_m)
+    validation_depths = set(map(float, config.split.validation_source_depths_m))
+    test_depths = set(map(float, config.split.test_source_depths_m))
+    if validation_depths or test_depths:
+        terrain_count = len(family.profiles) if family is not None else 1
+        environment_stride = terrain_count * ssp_profile_count
+        source_depths = config.contract.resolved_source_depths_m
+        splits = np.empty(n_samples, dtype="U10")
+        for sample_index in range(n_samples):
+            source_index = (sample_index // environment_stride) % source_depth_count
+            source_depth = source_depths[source_index]
+            if source_depth in validation_depths:
+                splits[sample_index] = "validation"
+            elif source_depth in test_depths:
+                splits[sample_index] = "test"
+            else:
+                splits[sample_index] = "train"
+        return splits
     if family is None and ssp_profile_count == 1 and source_depth_count == 1:
         return assign_splits(
             n_samples,
@@ -281,8 +294,7 @@ def run_pilot(config: MVPConfig, n_samples: int = 8) -> Path:
         "n_samples": n_samples,
         "ray_counts": config.contract.pilot_ray_counts,
         "source_depths_m": {
-            record.sample_id: _source_depth_for_record(config, record)
-            for record in records
+            record.sample_id: _source_depth_for_record(config, record) for record in records
         },
         "aggregate": aggregate,
         "per_sample": comparisons,
@@ -317,8 +329,8 @@ def _reuse_matching_labels(
     source_manifest = source_root / "manifest.json"
     source_default_depth = None
     if source_manifest.exists():
-        source_contract = json.loads(source_manifest.read_text()).get("config", {}).get(
-            "contract", {}
+        source_contract = (
+            json.loads(source_manifest.read_text()).get("config", {}).get("contract", {})
         )
         source_depths = source_contract.get("source_depths_m") or [
             source_contract.get("source_depth_m")

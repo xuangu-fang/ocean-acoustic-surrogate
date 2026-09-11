@@ -77,26 +77,41 @@ class ContractConfig(BaseModel):
             raise ValueError("MVP contract requires frequency_hz=1000")
         if self.range_end_m != 50000.0:
             raise ValueError("MVP contract requires range_end_m=50000")
-        minimum_bottom = (
-            min(depth for profile in self.bathymetry.profiles for depth in profile.depths_m)
-            if self.bathymetry is not None
-            else self.water_depth_m
-        )
-        source_depths = self.resolved_source_depths_m
-        if len(source_depths) != len(set(source_depths)):
-            raise ValueError("source_depths_m must not contain duplicates")
-        if any(depth <= 0 or depth >= minimum_bottom for depth in source_depths):
-            raise ValueError("every source depth must be positive and above the seabed")
-        if any(depth > self.depth_end_m for depth in source_depths):
-            raise ValueError("every source depth must lie inside the receiver depth domain")
-        if self.depth_end_m >= minimum_bottom:
-            raise ValueError("depth_end_m must remain above the seabed")
+        minimum_bottom = self.water_depth_m
+        source_bottoms = [self.water_depth_m]
         if self.bathymetry is not None:
+            minimum_bottom = min(
+                depth for profile in self.bathymetry.profiles for depth in profile.depths_m
+            )
+            source_bottoms = []
             for profile in self.bathymetry.profiles:
                 if profile.ranges_m[0] > 0:
                     raise ValueError("bathymetry must start at or before source range 0")
                 if profile.ranges_m[-1] < self.range_end_m:
                     raise ValueError("bathymetry must cover the full calculation range")
+                right = next(
+                    index for index, distance in enumerate(profile.ranges_m) if distance >= 0
+                )
+                if profile.ranges_m[right] == 0 or right == 0:
+                    source_bottoms.append(profile.depths_m[right])
+                else:
+                    left = right - 1
+                    fraction = (0 - profile.ranges_m[left]) / (
+                        profile.ranges_m[right] - profile.ranges_m[left]
+                    )
+                    source_bottoms.append(
+                        profile.depths_m[left]
+                        + fraction * (profile.depths_m[right] - profile.depths_m[left])
+                    )
+        source_depths = self.resolved_source_depths_m
+        if len(source_depths) != len(set(source_depths)):
+            raise ValueError("source_depths_m must not contain duplicates")
+        if any(depth <= 0 or depth >= min(source_bottoms) for depth in source_depths):
+            raise ValueError(
+                "every source depth must be positive and above the source-position seabed"
+            )
+        if self.depth_end_m >= minimum_bottom:
+            raise ValueError("depth_end_m must remain above the seabed")
         if self.field_mode != "incoherent":
             raise ValueError("MVP label contract requires incoherent Bellhop TL")
         return self
@@ -147,6 +162,8 @@ class SplitConfig(BaseModel):
     train_fraction: float = 0.75
     validation_fraction: float = 0.125
     test_fraction: float = 0.125
+    validation_source_depths_m: list[float] = Field(default_factory=list)
+    test_source_depths_m: list[float] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_sum(self) -> SplitConfig:
@@ -171,6 +188,23 @@ class MVPConfig(BaseModel):
     split: SplitConfig
     acceptance: AcceptanceConfig
     storage: StorageConfig
+
+    @model_validator(mode="after")
+    def validate_source_depth_holdout(self) -> MVPConfig:
+        validation = set(map(float, self.split.validation_source_depths_m))
+        test = set(map(float, self.split.test_source_depths_m))
+        if bool(validation) != bool(test):
+            raise ValueError(
+                "validation_source_depths_m and test_source_depths_m must be set together"
+            )
+        if validation & test:
+            raise ValueError("validation and test source-depth holdouts must be disjoint")
+        available = set(self.contract.resolved_source_depths_m)
+        if not validation | test <= available:
+            raise ValueError("every held-out source depth must appear in source_depths_m")
+        if (validation or test) and not (available - validation - test):
+            raise ValueError("at least one source depth must remain for training")
+        return self
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> MVPConfig:

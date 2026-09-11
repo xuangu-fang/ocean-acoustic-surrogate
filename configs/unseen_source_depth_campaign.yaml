@@ -1,0 +1,70 @@
+training_defaults:
+  seed: 20260911
+  batch_size: 16
+  max_epochs: 360
+  early_stopping_patience: 70
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  scheduler: cosine
+  target_normalization: field_mean
+
+experiments:
+  - id: deep_sourcebar_scalar_h32
+    hypothesis: Continuous scalar source conditioning should interpolate to source depths never observed during training.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      use_bathymetry_feature: true
+      use_source_depth_feature: true
+      source_depth_encoding: scalar
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: deep_sourcebar_gaussian_h32
+    hypothesis: Adding a smooth depth-localized source marker improves unseen-depth interpolation near the lower receiver boundary.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    model:
+      hidden_channels: 32
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      use_bathymetry_feature: true
+      use_source_depth_feature: true
+      source_depth_encoding: scalar_gaussian
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0
+
+  - id: deep_sourcebar_gaussian_h48
+    hypothesis: A wider operator checks whether residual unseen-depth error is limited by representation capacity.
+    minimum_mean_baseline_test_rmse_db: 4.0
+    model:
+      hidden_channels: 48
+      modes_depth: 16
+      modes_range: 48
+      n_layers: 4
+      padding_depth: 8
+      padding_range: 16
+      residual_blocks: true
+      local_kernel_size: 1
+      use_hankel_feature: false
+      use_bathymetry_feature: true
+      use_source_depth_feature: true
+      source_depth_encoding: scalar_gaussian
+    loss:
+      gradient_weight: 0.0
+      convergence_weight: 0.0

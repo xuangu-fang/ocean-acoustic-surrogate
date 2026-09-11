@@ -280,6 +280,10 @@ def run_pilot(config: MVPConfig, n_samples: int = 8) -> Path:
         "field_mode": config.contract.field_mode,
         "n_samples": n_samples,
         "ray_counts": config.contract.pilot_ray_counts,
+        "source_depths_m": {
+            record.sample_id: _source_depth_for_record(config, record)
+            for record in records
+        },
         "aggregate": aggregate,
         "per_sample": comparisons,
         "timing_seconds": {

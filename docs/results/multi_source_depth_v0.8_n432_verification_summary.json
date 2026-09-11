@@ -1,0 +1,71 @@
+{
+  "release": "technical-report-v1.6",
+  "dataset": {
+    "id": "bashi_gebco_four_terrain_woa23_m03_m06_m12_z0050_z1000_v0.8_n432",
+    "sha256": "7be279cbbaf5bd09549abf70a1814d4530fe53ca6c3a45764df5e07bd2eadfc1",
+    "samples": 432,
+    "split_counts": {
+      "train": 288,
+      "validation": 72,
+      "test": 72
+    },
+    "factor_design": {
+      "terrain_profiles": 4,
+      "woa23_months": [3, 6, 12],
+      "source_depths_m": [50, 100, 200, 400, 700, 1000],
+      "ssp_perturbations_per_group": 6
+    },
+    "label_provenance": {
+      "reused_verified": 72,
+      "new_bellhop_fields": 360,
+      "generation_failures": 0,
+      "reference_rays_per_field": 25600
+    }
+  },
+  "ray_convergence_12800_to_25600": {
+    "audited_fields": 12,
+    "mean_rmse_db": 0.2187228765781744,
+    "worst_rmse_db": 0.3095451891422272,
+    "mean_p95_absolute_error_db": 0.17817712624867757
+  },
+  "recommended_model": {
+    "name": "SourceBAR-FNO",
+    "experiment_id": "sourcebar_a1_scalar_source",
+    "run_id": "20260911T051353Z_sourcebar_a1_scalar_source",
+    "parameter_count": 6300481,
+    "source_depth_encoding": "normalized scalar plane",
+    "test_rmse_db": 1.2407430917500861,
+    "test_mae_db": 0.6215177743934138,
+    "test_p90_sample_rmse_db": 1.7362205460062665,
+    "test_worst_sample_rmse_db": 2.6159765986374746,
+    "a100_p95_latency_ms_independent": 4.300594609230757,
+    "overall_acceptance_pass": true
+  },
+  "training_mean_field_baseline": {
+    "test_rmse_db": 4.222627593066295,
+    "test_mae_db": 2.7955372526973394,
+    "rmse_reduction_percent": 70.61680045411937
+  },
+  "ablation_test_rmse_db": {
+    "no_source_depth_encoding": 3.1215390532751486,
+    "scalar_source_depth_recommended": 1.2407430917500861,
+    "scalar_plus_gaussian_marker": 1.248588855946819,
+    "wide_h48_scalar_plus_gaussian": 1.2359119338483344
+  },
+  "recommended_model_by_source_depth_rmse_db": {
+    "50": 1.2613896869941326,
+    "100": 1.0800592875632307,
+    "200": 1.4768049522994842,
+    "400": 1.1301791702797757,
+    "700": 1.2115287604504457,
+    "1000": 1.2461946613527366
+  },
+  "independent_verification": {
+    "device": "cuda",
+    "dataset_hash_matches_run": true,
+    "recomputed_test_rmse_db": 1.2407524778224799,
+    "rmse_absolute_delta_db": 0.000009386072393757772,
+    "checkpoint_reload_matches_rmse": true,
+    "verification_pass": true
+  }
+}

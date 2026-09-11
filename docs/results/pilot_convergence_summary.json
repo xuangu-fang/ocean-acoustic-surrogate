@@ -1,28 +1,21 @@
 {
-  "dataset_id": "scs_june_narrow_v0.1",
+  "dataset_id": "bashi_gebco_four_terrain_woa23_m03_m06_m12_z0050_z1000_v0.8_n432",
   "field_mode": "incoherent",
-  "n_samples": 8,
-  "ray_ladder": [3200, 6400, 12800, 25600],
+  "n_samples": 12,
+  "source_depths_m": [50, 100, 200, 400, 700, 1000],
+  "samples_per_source_depth": 2,
+  "ray_ladder": [12800, 25600],
   "comparisons": [
-    {
-      "lower_rays": 3200,
-      "upper_rays": 6400,
-      "mean_rmse_db": 0.1039262735,
-      "worst_rmse_db": 0.1484057947
-    },
-    {
-      "lower_rays": 6400,
-      "upper_rays": 12800,
-      "mean_rmse_db": 0.0656015007,
-      "worst_rmse_db": 0.1239176739
-    },
     {
       "lower_rays": 12800,
       "upper_rays": 25600,
-      "mean_rmse_db": 0.0520466073,
-      "worst_rmse_db": 0.1409614537
+      "mean_mae_db": 0.058322802142643924,
+      "mean_rmse_db": 0.2187228765781744,
+      "worst_rmse_db": 0.3095451891422272,
+      "mean_p95_absolute_error_db": 0.17817712624867757
     }
   ],
   "reference_num_rays": 25600,
+  "reference_median_wall_seconds": 7.7489132466726005,
   "failures": 0
 }

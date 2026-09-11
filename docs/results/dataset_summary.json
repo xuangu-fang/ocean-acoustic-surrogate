@@ -1,28 +1,28 @@
 {
-  "dataset_id": "bashi_gebco_four_terrain_woa23_m03_m06_m12_v0.7_n384",
-  "dataset_path": "/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate/datasets/bashi_gebco_four_terrain_woa23_m03_m06_m12_v0.7_n384/n384/dataset.npz",
-  "dataset_sha256": "9c90e051851e24082816b435bc529250f64d8a61c8a8f603916071eb0fda0a61",
-  "n_samples": 384,
+  "dataset_id": "bashi_gebco_four_terrain_woa23_m03_m06_m12_z0050_z1000_v0.8_n432",
+  "dataset_path": "/mnt/data/xuangu-fang/ocean-acoustics/projects/ocean-acoustic-surrogate/datasets/bashi_gebco_four_terrain_woa23_m03_m06_m12_z0050_z1000_v0.8_n432/n432/dataset.npz",
+  "dataset_sha256": "7be279cbbaf5bd09549abf70a1814d4530fe53ca6c3a45764df5e07bd2eadfc1",
+  "n_samples": 432,
   "split_counts": {
     "train": 288,
-    "validation": 48,
-    "test": 48
+    "validation": 72,
+    "test": 72
   },
   "field_shape": [
     96,
     256
   ],
-  "finite_coverage": 0.9987494150797526,
+  "finite_coverage": 0.9991502173152971,
   "bellhop_wall_seconds": {
-    "total": 3239.256559692323,
-    "median": 8.0960792619735,
-    "p95": 12.573367340676487
+    "total": 3602.806914307177,
+    "median": 7.802616004366428,
+    "p95": 12.62600412433967
   },
-  "dataset_size_bytes": 31165949,
+  "dataset_size_bytes": 34990512,
   "parameter_ranges": {
     "global_offset_mps": {
       "minimum": -0.5497148036956787,
-      "maximum": 0.5465390086174011
+      "maximum": 0.5470356941223145
     },
     "thermocline_amplitude_mps": {
       "minimum": -0.7983888983726501,
@@ -34,126 +34,458 @@
     },
     "deep_gradient_mps": {
       "minimum": -0.5497439503669739,
-      "maximum": 0.5430412292480469
+      "maximum": 0.5466822385787964
     }
   },
   "tl_db": {
-    "minimum": 37.95789337158203,
-    "maximum": 156.14596557617188,
-    "mean": 83.31696319580078,
-    "standard_deviation": 9.881155014038086
+    "minimum": 37.958534240722656,
+    "maximum": 146.2825927734375,
+    "mean": 82.00518798828125,
+    "standard_deviation": 8.786133766174316
   },
   "training_mean_field_baseline_test": {
-    "rmse_db": 4.9539135632486575,
-    "mae_db": 3.3888880837663042,
-    "bias_db": 0.014641145498787698,
-    "p95_absolute_error_db": 10.014270782470692,
-    "maximum_absolute_error_db": 54.23918914794922,
-    "cell_count": 1178204,
-    "macro_mean_rmse_db": 4.8685722813265935,
-    "median_sample_rmse_db": 4.5672024262667,
-    "p90_sample_rmse_db": 6.441623982803259,
-    "worst_sample_rmse_db": 7.0610960721463405
+    "rmse_db": 4.222627593066295,
+    "mae_db": 2.7955372526973394,
+    "bias_db": -0.004470825501707301,
+    "p95_absolute_error_db": 8.725699615478511,
+    "maximum_absolute_error_db": 61.575645446777344,
+    "cell_count": 1767938,
+    "macro_mean_rmse_db": 3.9593543421519635,
+    "median_sample_rmse_db": 3.4668506556182,
+    "p90_sample_rmse_db": 6.425723870027635,
+    "worst_sample_rmse_db": 8.601910117676885
   },
   "terrain_profile_counts": {
     "gebco_az030_screened": {
       "train": 72,
-      "validation": 12,
-      "test": 12
+      "validation": 18,
+      "test": 18
     },
     "gebco_az090_screened": {
       "train": 72,
-      "validation": 12,
-      "test": 12
+      "validation": 18,
+      "test": 18
     },
     "gebco_az210_screened": {
       "train": 72,
-      "validation": 12,
-      "test": 12
+      "validation": 18,
+      "test": 18
     },
     "gebco_az225_screened": {
       "train": 72,
-      "validation": 12,
-      "test": 12
+      "validation": 18,
+      "test": 18
     }
   },
   "ssp_profile_counts": {
     "woa23_december": {
       "train": 96,
-      "validation": 16,
-      "test": 16
+      "validation": 24,
+      "test": 24
     },
     "woa23_june": {
       "train": 96,
-      "validation": 16,
-      "test": 16
+      "validation": 24,
+      "test": 24
     },
     "woa23_march": {
       "train": 96,
-      "validation": 16,
-      "test": 16
+      "validation": 24,
+      "test": 24
+    }
+  },
+  "source_depth_counts": {
+    "50": {
+      "train": 48,
+      "validation": 12,
+      "test": 12
+    },
+    "100": {
+      "train": 48,
+      "validation": 12,
+      "test": 12
+    },
+    "200": {
+      "train": 48,
+      "validation": 12,
+      "test": 12
+    },
+    "400": {
+      "train": 48,
+      "validation": 12,
+      "test": 12
+    },
+    "700": {
+      "train": 48,
+      "validation": 12,
+      "test": 12
+    },
+    "1000": {
+      "train": 48,
+      "validation": 12,
+      "test": 12
     }
   },
   "environment_group_counts": {
-    "gebco_az030_screened::woa23_december": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_december::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     },
-    "gebco_az030_screened::woa23_june": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_december::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     },
-    "gebco_az030_screened::woa23_march": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_december::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     },
-    "gebco_az090_screened::woa23_december": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_december::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     },
-    "gebco_az090_screened::woa23_june": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_december::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     },
-    "gebco_az090_screened::woa23_march": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_december::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     },
-    "gebco_az210_screened::woa23_december": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_june::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     },
-    "gebco_az210_screened::woa23_june": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_june::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     },
-    "gebco_az210_screened::woa23_march": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_june::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     },
-    "gebco_az225_screened::woa23_december": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_june::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     },
-    "gebco_az225_screened::woa23_june": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_june::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     },
-    "gebco_az225_screened::woa23_march": {
-      "train": 24,
-      "validation": 4,
-      "test": 4
+    "gebco_az030_screened::woa23_june::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az030_screened::woa23_march::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az030_screened::woa23_march::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az030_screened::woa23_march::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az030_screened::woa23_march::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az030_screened::woa23_march::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az030_screened::woa23_march::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_december::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_december::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_december::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_december::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_december::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_december::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_june::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_june::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_june::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_june::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_june::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_june::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_march::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_march::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_march::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_march::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_march::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az090_screened::woa23_march::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_december::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_december::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_december::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_december::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_december::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_december::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_june::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_june::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_june::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_june::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_june::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_june::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_march::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_march::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_march::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_march::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_march::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az210_screened::woa23_march::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_december::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_december::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_december::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_december::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_december::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_december::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_june::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_june::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_june::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_june::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_june::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_june::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_march::z50m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_march::z100m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_march::z200m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_march::z400m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_march::z700m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
+    },
+    "gebco_az225_screened::woa23_march::z1000m": {
+      "train": 4,
+      "validation": 1,
+      "test": 1
     }
   }
 }
